@@ -1,0 +1,36 @@
+---
+title: "My Topic Intro"
+format:
+  revealjs:
+    slide-number: true
+    transition: fade
+jupyter: python3
+---
+
+## Motivation
+- Why this topic?
+- What problem?
+- What’s the main idea?
+
+---
+
+## Key Equation
+$$
+\hat{\theta}=\arg\min_\theta \sum_{i=1}^n \mathcal{L}_\theta(x_i,y_i)
+$$
+
+---
+
+## Tiny Visualization (Python)
+```{python}
+#| label: fig-demo
+#| fig-cap: "Simple demo plot"
+import numpy as np
+import matplotlib.pyplot as plt
+
+x = np.linspace(0, 1, 200)
+y = np.sin(2*np.pi*x)
+
+plt.figure()
+plt.plot(x, y)
+plt.show()
