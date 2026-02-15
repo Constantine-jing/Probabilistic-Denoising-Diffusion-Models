@@ -1,0 +1,58 @@
+/*-- scss:defaults --*/
+
+/* --- Typography --- */
+$presentation-heading-font: "Inter", "Segoe UI", sans-serif !default;
+$presentation-font: "Inter", "Segoe UI", sans-serif !default;
+$presentation-font-size-root: 32px !default;
+
+$presentation-heading-text-transform: none !default;
+$presentation-heading-font-weight: 700 !default;
+
+$body-bg: #0b0f19 !default;
+$body-color: #e8eefc !default;
+
+$link-color: #7dd3fc !default;
+
+/* Code blocks */
+$code-block-bg: rgba(255,255,255,0.06) !default;
+$code-block-border-color: rgba(255,255,255,0.12) !default;
+
+/*-- scss:rules --*/
+
+.reveal .slides {
+  text-align: left;
+}
+
+.reveal h1, .reveal h2, .reveal h3 {
+  letter-spacing: -0.02em;
+}
+
+.reveal .slide-number {
+  opacity: 0.5;
+}
+
+/* Make math a bit bigger */
+.reveal .math {
+  font-size: 1.05em;
+}
+
+/* Nice table styling */
+.reveal table {
+  font-size: 0.75em;
+}
+
+/* Highlight box for key equations */
+.key-eq {
+  background: rgba(125, 211, 252, 0.1);
+  border-left: 4px solid #7dd3fc;
+  padding: 0.8em 1em;
+  border-radius: 6px;
+  margin: 0.5em 0;
+}
+
+/* Subtle note text */
+.note {
+  font-size: 0.7em;
+  opacity: 0.7;
+  font-style: italic;
+}

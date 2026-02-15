@@ -1,36 +1,873 @@
 ---
-title: "My Topic Intro"
+title: "Denoising Diffusion Probabilistic Models"
+subtitle: "From Theory to Fast Sampling: DDPM, Improvements & Consistency Models"
+author: "YOUR NAME & TEAMMATE NAME"
+date: "2026"
 format:
   revealjs:
-    slide-number: true
+    theme: [simple, assets/theme.scss]
+    slide-number: c/t
     transition: fade
+    background-transition: fade
+    incremental: false
+    controls: true
+    progress: true
+    center: true
+    width: 1280
+    height: 720
+    margin: 0.06
+    code-line-numbers: true
+    highlight-style: github
+    fig-align: center
+execute:
+  echo: true
+  warning: false
+  message: false
+  freeze: auto
+bibliography: references.bib
 jupyter: python3
 ---
 
-## Motivation
-- Why this topic?
-- What problem?
-- What’s the main idea?
+<!-- ============================================================
+     SECTION 1: INTRODUCTION & MOTIVATION
+     ============================================================ -->
+
+# Introduction & Motivation {background-color="#1a1a2e"}
+
+::: notes
+**WHAT TO SAY:** "Hi everyone, today we're presenting on Denoising Diffusion Probabilistic Models — or DDPMs. These are the generative models behind things like DALL-E, Stable Diffusion, and Midjourney. We'll cover the core method, key improvements, and a cool recent extension called Consistency Models."
+:::
 
 ---
 
-## Key Equation
-$$
-\hat{\theta}=\arg\min_\theta \sum_{i=1}^n \mathcal{L}_\theta(x_i,y_i)
-$$
+## The Problem: Generative Modeling
+
+**Goal:** Given training data from some distribution $q(x)$, learn a model $p_\theta(x)$ that can generate *new*, realistic samples.
+
+. . .
+
+**Think of it as:** You see 1 million cat photos. Now draw a new cat that *could have been* a real photo but wasn't.
+
+. . .
+
+**Traditional approaches:**
+
+| Method | Strength | Weakness |
+|--------|----------|----------|
+| GANs | Fast sampling, sharp images | Unstable training, mode collapse |
+| VAEs | Stable training, good likelihood | Blurry samples |
+| Autoregressive | Best likelihoods | Very slow generation |
+| **Diffusion Models** | **Stable + high quality** | **Slow sampling** |
+
+::: notes
+**WHAT TO SAY:** "The generative modeling problem is: given training data, learn to create new realistic samples. There are several approaches. GANs are fast but hard to train. VAEs are stable but blurry. Diffusion models give us the best of both worlds — stable training AND high quality — but they're slow at sampling. That slowness is a key limitation we'll address later."
+
+**WHAT THIS MEANS:** Mode collapse = GAN only learns to generate a few types of images, ignoring the rest. Diffusion models don't have this problem.
+:::
 
 ---
 
-## Tiny Visualization (Python)
+## The Diffusion Idea in One Sentence
+
+> **Slowly destroy data by adding noise, then train a neural network to reverse each tiny step.**
+
+. . .
+
+:::: columns
+::: {.column width="45%"}
+### Forward Process (destroy)
+- Start with a clean image $x_0$
+- Add a little Gaussian noise at each step
+- After $T=1000$ steps → pure random noise
+- **No learning required** — this is just math
+:::
+
+::: {.column width="10%"}
+:::
+
+::: {.column width="45%"}
+### Reverse Process (create)
+- Start from pure noise $x_T \sim \mathcal{N}(0, I)$
+- Use a neural net to remove noise step by step
+- After $T$ denoising steps → a realistic image
+- **This is what we learn**
+:::
+::::
+
+::: notes
+**WHAT TO SAY:** "Here's the core idea. Imagine you have a photo. You slowly add static to it — like an old TV. After 1000 steps it's pure random noise. Now, if you could train a neural network to undo each tiny step of that corruption, you could start from noise and walk backwards to create a brand new image. The forward destruction is just math — we choose it. The reverse reconstruction is what the neural network learns."
+
+**WHAT THIS MEANS:** The forward process is like a known recipe for making a mess. The reverse process is learning to clean up.
+:::
+
+---
+
+## Why Not Just Generate Directly?
+
+Generating a full image from scratch in one shot is **extremely hard**.
+
+. . .
+
+But removing a *tiny bit* of noise? That's a **simple regression problem**.
+
+. . .
+
+DDPM breaks one hard problem into 1000 easy problems:
+
+$$\underbrace{\text{noise}}_{\text{easy to sample}} \xrightarrow{\text{step 1}} \xrightarrow{\text{step 2}} \cdots \xrightarrow{\text{step T}} \underbrace{\text{data}}_{\text{what we want}}$$
+
+This is the key insight from @sohldickstein2015deep, refined by @ho2020ddpm.
+
+::: notes
+**WHAT TO SAY:** "Why go through all this trouble? Because generating a realistic image from scratch is incredibly difficult. But if I show you an image with just a tiny bit of noise and ask 'what's the clean version?' — that's easy! DDPMs decompose one impossible task into a thousand easy ones. This idea was introduced by Sohl-Dickstein in 2015 and made practical by Ho et al. in 2020."
+
+**WHAT THIS MEANS for statistics:** This connects to hierarchical models and Markov chains. Each step is a simple conditional distribution — we're just chaining many simple steps.
+:::
+
+<!-- ============================================================
+     SECTION 2: THE METHOD (Core Math)
+     ============================================================ -->
+
+# The Method: Core Mathematics {background-color="#1a1a2e"}
+
+::: notes
+**WHAT TO SAY:** "Now let's get into the actual math. Don't worry — I'll explain what each equation means in plain English."
+:::
+
+---
+
+## Step 1: The Forward Process (Adding Noise)
+
+At each timestep, slightly shrink the image and add noise:
+
+$$q(x_t \mid x_{t-1}) = \mathcal{N}\!\left(x_t;\; \sqrt{1-\beta_t}\, x_{t-1},\; \beta_t\, I\right)$$
+
+. . .
+
+- $\beta_t$ = **noise schedule** — small numbers (e.g., $\beta_1 = 0.0001$, $\beta_T = 0.02$)
+- $\sqrt{1-\beta_t} \approx 0.99999$ — barely shrinks the image
+- $\beta_t$ — amount of new noise added at step $t$
+- After 1000 steps of this, the image is destroyed
+
+::: notes
+**WHAT TO SAY:** "The forward process is a Markov chain. At each step t, we take the previous image, multiply it by a number very close to 1 — so barely shrinking it — and add a small amount of Gaussian noise. Beta-t controls how much noise we add. After doing this 1000 times, the original image is completely buried in noise."
+
+**WHAT THIS MEANS:** $\mathcal{N}(\mu, \sigma^2)$ means Gaussian with mean $\mu$ and variance $\sigma^2$. So the mean of $x_t$ is approximately $x_{t-1}$ (slightly shrunk), plus fresh noise.
+:::
+
+---
+
+## The Shortcut: Jump to Any Timestep Directly
+
+Define: $\alpha_t = 1 - \beta_t$ and $\bar{\alpha}_t = \prod_{s=1}^{t} \alpha_s$ (cumulative product)
+
+. . .
+
+::: {.key-eq}
+$$q(x_t \mid x_0) = \mathcal{N}\!\left(x_t;\; \sqrt{\bar{\alpha}_t}\, x_0,\; (1-\bar{\alpha}_t)\, I\right)$$
+:::
+
+. . .
+
+In practice, to get $x_t$ from $x_0$:
+
+$$\boxed{x_t = \sqrt{\bar{\alpha}_t}\; x_0 + \sqrt{1 - \bar{\alpha}_t}\; \varepsilon, \qquad \varepsilon \sim \mathcal{N}(0, I)}$$
+
+. . .
+
+- $\sqrt{\bar{\alpha}_t}$ = how much **original signal** remains
+- $\sqrt{1 - \bar{\alpha}_t}$ = how much **noise** there is
+- **No need to go step by step** — jump straight to any noise level!
+
+::: notes
+**WHAT TO SAY:** "Here's the beautiful part. Because Gaussians combine so nicely, we don't need to go through all 1000 steps to get x_t. We can jump directly from clean data x_0 to any noise level t using this formula. Alpha-bar-t is just the running product of all the (1 - beta) values. When alpha-bar is close to 1 — early steps — most of the original image is preserved. When it's close to 0 — late steps — it's mostly noise. This is critical for training: we can randomly pick any timestep t and immediately create training data."
+
+**WHAT THIS MEANS:** $\bar{\alpha}_t$ controls the signal-to-noise ratio. Think of it as: what fraction of the image is 'real signal' vs 'noise.' The Signal-to-Noise Ratio is $\text{SNR}(t) = \frac{\bar{\alpha}_t}{1 - \bar{\alpha}_t}$.
+:::
+
+---
+
+## Step 2: The Reverse Process (What We Learn)
+
+We want to learn the reverse: $p_\theta(x_{t-1} \mid x_t)$
+
+. . .
+
+Since each forward step adds only a *tiny* bit of noise, the reverse step is also approximately Gaussian:
+
+$$p_\theta(x_{t-1} \mid x_t) = \mathcal{N}\!\left(x_{t-1};\; \mu_\theta(x_t, t),\; \Sigma_\theta(x_t, t)\right)$$
+
+. . .
+
+A **U-Net** neural network takes in $(x_t, t)$ and predicts the parameters.
+
+::: notes
+**WHAT TO SAY:** "Now for the reverse. We need to learn p_theta — the denoising step. Since each forward step is a tiny Gaussian perturbation, the reverse is also approximately Gaussian. So our neural network just needs to predict the mean and variance of this Gaussian. The architecture used is a U-Net — an encoder-decoder network with skip connections, originally designed for image segmentation. It takes in the noisy image plus the timestep number, and outputs the denoising parameters."
+
+**WHAT THIS MEANS:** The U-Net is shared across ALL timesteps (parameter tying). The timestep t is fed in via positional embeddings — like in Transformers — so the same network can handle any noise level.
+:::
+
+---
+
+## Step 3: The $\varepsilon$-Prediction Trick
+
+Instead of predicting $\mu_\theta$ directly, predict the **noise** $\varepsilon$ that was added:
+
+. . .
+
+::: {.key-eq}
+**Network learns:** $\varepsilon_\theta(x_t, t) \approx \varepsilon$ (the actual noise added)
+:::
+
+. . .
+
+Why? Because we know: $x_t = \sqrt{\bar{\alpha}_t}\, x_0 + \sqrt{1-\bar{\alpha}_t}\, \varepsilon$
+
+So if we predict $\varepsilon$, we can recover both $x_0$ and $\mu$:
+
+$$\hat{x}_0 = \frac{1}{\sqrt{\bar{\alpha}_t}}\left(x_t - \sqrt{1-\bar{\alpha}_t}\;\varepsilon_\theta(x_t, t)\right)$$
+
+::: notes
+**WHAT TO SAY:** "Ho et al. discovered a clever trick. Instead of making the network predict the mean directly, they have it predict the noise epsilon that was added. This works because we know exactly how x_t relates to x_0 and epsilon. If the network correctly predicts what noise was added, we can immediately recover the clean image. This reparameterization was key to getting good results."
+
+**WHAT THIS MEANS for statistics:** This is deeply connected to **denoising score matching**. The noise prediction $\varepsilon_\theta$ is proportional to the **score function** $\nabla_x \log p(x_t)$ — the gradient of the log-density. So training a diffusion model is essentially learning the score at multiple noise levels.
+:::
+
+---
+
+## Step 4: The Training Loss
+
+::: {.key-eq}
+$$\mathcal{L}_{\text{simple}} = \mathbb{E}_{t,\, x_0,\, \varepsilon}\left[\;\left\|\varepsilon - \varepsilon_\theta\!\left(\sqrt{\bar{\alpha}_t}\, x_0 + \sqrt{1-\bar{\alpha}_t}\,\varepsilon,\;\; t\right)\right\|^2\;\right]$$
+:::
+
+. . .
+
+**Training algorithm (in plain English):**
+
+1. Sample a clean image $x_0$ from training data
+2. Pick a random timestep $t \sim \text{Uniform}(1, T)$
+3. Sample noise $\varepsilon \sim \mathcal{N}(0, I)$
+4. Create noisy image: $x_t = \sqrt{\bar{\alpha}_t}\, x_0 + \sqrt{1-\bar{\alpha}_t}\,\varepsilon$
+5. Ask network to predict the noise: $\hat{\varepsilon} = \varepsilon_\theta(x_t, t)$
+6. Loss $= \|\varepsilon - \hat{\varepsilon}\|^2$ (mean squared error)
+
+. . .
+
+That's it. Beautifully simple. [@ho2020ddpm]
+
+::: notes
+**WHAT TO SAY:** "The training loss is almost shockingly simple. Take a clean image, pick a random timestep, add noise, and ask the network to predict what noise you added. The loss is just mean squared error between the real noise and the predicted noise. That's the entire training procedure. Ho et al. showed this simplified loss — which they call L-simple — gives much better image quality than the full variational bound."
+
+**WHAT THIS MEANS:** This simplified loss down-weights easy timesteps (small t, little noise) so the network focuses on harder denoising tasks. It's a reweighted version of the Evidence Lower Bound (ELBO). The connection: $\mathcal{L}_\text{simple}$ is equivalent to denoising score matching across multiple noise levels [@song2019scorematching].
+:::
+
+---
+
+## Step 5: Sampling (Generating New Images)
+
+```
+Algorithm: DDPM Sampling
+─────────────────────────
+1.  Sample x_T ~ N(0, I)              ← start from pure noise
+2.  For t = T, T-1, ..., 1:
+      z ~ N(0, I) if t > 1, else z = 0
+      x_{t-1} = (1/√α_t)(x_t - β_t/√(1-ᾱ_t) · ε_θ(x_t, t)) + σ_t · z
+3.  Return x_0                         ← your generated image!
+```
+
+. . .
+
+**Key observation:** This requires **T network evaluations** (typically T=1000).
+
+Each evaluation = one full pass through the U-Net → **sampling is slow!**
+
+::: notes
+**WHAT TO SAY:** "To generate an image, we start from pure random noise and iteratively denoise. At each step, the network predicts the noise, we partially remove it, and add a bit of fresh noise for stochasticity. After T steps, we get a clean image. The problem? T is typically 1000. That means 1000 forward passes through a large neural network to generate a single image. This takes minutes on a modern GPU, which is a big practical limitation."
+
+**WHAT THIS MEANS:** The sampling formula resembles **Langevin dynamics** — a method from statistical physics for sampling from a distribution using its score function. The learned $\varepsilon_\theta$ plays the role of the score.
+:::
+
+<!-- ============================================================
+     SECTION 3: DEMO - FORWARD PROCESS
+     ============================================================ -->
+
+# Demo: Watching Diffusion Work {background-color="#1a1a2e"}
+
+::: notes
+**WHAT TO SAY:** "Let me show you what the forward process actually looks like on a real image."
+:::
+
+---
+
+## Forward Diffusion: Destroying an Image
+
 ```{python}
-#| label: fig-demo
-#| fig-cap: "Simple demo plot"
+#| label: fig-forward-noise
+#| fig-cap: "Forward diffusion with LINEAR schedule: clean image → pure noise over 1000 steps"
+#| echo: true
+#| code-fold: true
 import numpy as np
 import matplotlib.pyplot as plt
 
-x = np.linspace(0, 1, 200)
-y = np.sin(2*np.pi*x)
+# ── Create a simple test image (8x8 checkerboard scaled up) ──
+# Replace this with: Image.open("assets/demo/input.jpg") for a real photo
+np.random.seed(42)
+block = 16
+pattern = np.zeros((8*block, 8*block, 3), dtype=np.float32)
+for i in range(8):
+    for j in range(8):
+        if (i + j) % 2 == 0:
+            pattern[i*block:(i+1)*block, j*block:(j+1)*block] = [0.9, 0.3, 0.2]
+        else:
+            pattern[i*block:(i+1)*block, j*block:(j+1)*block] = [0.2, 0.5, 0.9]
+x0 = pattern
 
-plt.figure()
-plt.plot(x, y)
+# ── LINEAR noise schedule (Ho et al. 2020) ──
+T = 1000
+betas = np.linspace(1e-4, 2e-2, T, dtype=np.float64)
+alphas = 1.0 - betas
+alpha_bar = np.cumprod(alphas)
+
+def q_sample(x0, t, alpha_bar):
+    """Forward process: sample x_t given x_0"""
+    eps = np.random.randn(*x0.shape)
+    return (np.sqrt(alpha_bar[t]) * x0 + np.sqrt(1 - alpha_bar[t]) * eps).clip(0, 1)
+
+# ── Plot at several timesteps ──
+timesteps = [0, 50, 150, 300, 500, 750, 999]
+fig, axes = plt.subplots(1, len(timesteps), figsize=(16, 3))
+for ax, t in zip(axes, timesteps):
+    xt = q_sample(x0, t, alpha_bar)
+    ax.imshow(xt)
+    ax.set_title(f"t = {t}", fontsize=12, fontweight='bold')
+    ax.axis("off")
+fig.suptitle("Forward Process: x₀ → x_T (linear schedule)", fontsize=14, y=1.02)
+plt.tight_layout()
 plt.show()
+```
+
+::: notes
+**WHAT TO SAY:** "Here's the forward process in action. At t=0 we have our clean image — a colorful checkerboard. As t increases, we add more and more noise following the linear schedule. By t=300, the structure is getting hard to see. By t=500, it's mostly noise. By t=999, it's indistinguishable from pure random noise. The model's job is to learn to reverse this process."
+
+**CODE EXPLANATION:**
+- `betas = np.linspace(1e-4, 2e-2, T)` — creates the linear noise schedule from Ho et al.
+- `alpha_bar = np.cumprod(1 - betas)` — the cumulative product that tells us total noise at step t
+- `q_sample` implements: $x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1-\bar{\alpha}_t}\varepsilon$
+- `.clip(0,1)` just keeps pixel values valid for display
+:::
+
+---
+
+## Why the Schedule Matters: SNR Comparison
+
+```{python}
+#| label: fig-snr-comparison
+#| fig-cap: "Signal-to-Noise Ratio over time: linear schedule drops too fast"
+#| echo: true
+#| code-fold: true
+import numpy as np
+import matplotlib.pyplot as plt
+
+T = 1000
+
+# ── LINEAR schedule (Ho et al. 2020) ──
+betas_lin = np.linspace(1e-4, 2e-2, T)
+alphas_lin = 1 - betas_lin
+ab_lin = np.cumprod(alphas_lin)
+
+# ── COSINE schedule (Nichol & Dhariwal 2021) ──
+s = 0.008  # small offset to prevent beta from being too small near t=0
+steps = np.arange(T + 1, dtype=np.float64)
+f = np.cos(((steps / T) + s) / (1 + s) * np.pi / 2) ** 2
+ab_cos = f / f[0]       # normalize so alpha_bar[0] = 1
+ab_cos = ab_cos[1:]      # now length T, for t = 1..T
+# clip betas to prevent singularities
+betas_cos = 1 - ab_cos / np.concatenate([[1.0], ab_cos[:-1]])
+betas_cos = np.clip(betas_cos, 0, 0.999)
+ab_cos = np.cumprod(1 - betas_cos)
+
+# ── Compute SNR ──
+snr_lin = ab_lin / (1 - ab_lin + 1e-12)
+snr_cos = ab_cos / (1 - ab_cos + 1e-12)
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 4.5))
+
+# Plot 1: alpha_bar
+axes[0].plot(ab_lin, label="Linear", linewidth=2, color="#ef4444")
+axes[0].plot(ab_cos, label="Cosine", linewidth=2, color="#3b82f6")
+axes[0].set_xlabel("Timestep t", fontsize=12)
+axes[0].set_ylabel("$\\bar{\\alpha}_t$ (signal fraction)", fontsize=12)
+axes[0].set_title("How much signal remains?", fontsize=13, fontweight='bold')
+axes[0].legend(fontsize=11)
+axes[0].grid(alpha=0.3)
+
+# Plot 2: SNR (log scale)
+axes[1].plot(snr_lin, label="Linear", linewidth=2, color="#ef4444")
+axes[1].plot(snr_cos, label="Cosine", linewidth=2, color="#3b82f6")
+axes[1].set_yscale("log")
+axes[1].set_xlabel("Timestep t", fontsize=12)
+axes[1].set_ylabel("SNR(t)  [log scale]", fontsize=12)
+axes[1].set_title("Signal-to-Noise Ratio", fontsize=13, fontweight='bold')
+axes[1].legend(fontsize=11)
+axes[1].grid(alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+```
+
+::: notes
+**WHAT TO SAY:** "This is a key improvement from Nichol and Dhariwal. The LEFT plot shows alpha-bar — how much original signal remains — over time. The RED linear schedule drops to near zero by step 750, meaning the last quarter of the process is basically wasted — it's just shuffling pure noise around. The BLUE cosine schedule decreases much more gradually, keeping useful signal throughout the entire process. The RIGHT plot shows the same thing as SNR on a log scale. The cosine schedule provides a smoother transition, which leads to better image quality, especially for small images."
+
+**WHAT THIS MEANS:**
+- SNR = signal / noise = $\bar{\alpha}_t / (1-\bar{\alpha}_t)$
+- High SNR = mostly signal, low SNR = mostly noise
+- Linear schedule: last ~25% of timesteps are wasted (already pure noise)
+- Cosine schedule: useful denoising work happening across all timesteps
+- This is from Nichol & Dhariwal 2021, Table 2: cosine + L_hybrid gives best FID on CIFAR-10
+:::
+
+---
+
+## Visual Comparison: Linear vs Cosine at Same Timesteps
+
+```{python}
+#| label: fig-schedule-visual
+#| fig-cap: "Same image, same timesteps — cosine preserves structure longer"
+#| echo: true
+#| code-fold: true
+import numpy as np
+import matplotlib.pyplot as plt
+
+np.random.seed(123)
+# Reuse the checkerboard
+block = 16
+pattern = np.zeros((8*block, 8*block, 3), dtype=np.float32)
+for i in range(8):
+    for j in range(8):
+        if (i + j) % 2 == 0:
+            pattern[i*block:(i+1)*block, j*block:(j+1)*block] = [0.9, 0.3, 0.2]
+        else:
+            pattern[i*block:(i+1)*block, j*block:(j+1)*block] = [0.2, 0.5, 0.9]
+x0 = pattern
+
+T = 1000
+# Linear
+betas_lin = np.linspace(1e-4, 2e-2, T)
+ab_lin = np.cumprod(1 - betas_lin)
+
+# Cosine
+s = 0.008
+steps = np.arange(T + 1, dtype=np.float64)
+f_cos = np.cos(((steps / T) + s) / (1 + s) * np.pi / 2) ** 2
+ab_cos_raw = f_cos / f_cos[0]
+ab_cos = ab_cos_raw[1:]
+betas_c = 1 - ab_cos / np.concatenate([[1.0], ab_cos[:-1]])
+betas_c = np.clip(betas_c, 0, 0.999)
+ab_cos = np.cumprod(1 - betas_c)
+
+def q_sample_with_schedule(x0, t, ab):
+    eps = np.random.randn(*x0.shape)
+    return (np.sqrt(ab[t]) * x0 + np.sqrt(1 - ab[t]) * eps).clip(0, 1)
+
+compare_t = [200, 400, 600, 800]
+fig, axes = plt.subplots(2, len(compare_t), figsize=(14, 5))
+
+for col, t in enumerate(compare_t):
+    np.random.seed(col)  # same noise for fair comparison
+    img_lin = q_sample_with_schedule(x0, t, ab_lin)
+    np.random.seed(col)
+    img_cos = q_sample_with_schedule(x0, t, ab_cos)
+
+    axes[0, col].imshow(img_lin)
+    axes[0, col].set_title(f"t={t}", fontsize=11, fontweight='bold')
+    axes[0, col].axis("off")
+
+    axes[1, col].imshow(img_cos)
+    axes[1, col].set_title(f"t={t}", fontsize=11)
+    axes[1, col].axis("off")
+
+axes[0, 0].set_ylabel("Linear", fontsize=12, fontweight='bold', rotation=0, labelpad=50)
+axes[1, 0].set_ylabel("Cosine", fontsize=12, fontweight='bold', rotation=0, labelpad=50)
+fig.suptitle("Same noise realization, different schedules", fontsize=14, fontweight='bold', y=1.02)
+plt.tight_layout()
+plt.show()
+```
+
+::: notes
+**WHAT TO SAY:** "Here's the same image with the same random noise, but with different schedules. Look at t=400: the linear schedule has already destroyed most of the structure, while the cosine schedule still shows clear checkerboard patterns. By t=600, linear is basically noise while cosine still has visible structure. This means cosine gives the network more 'useful work' to do at each step."
+:::
+
+<!-- ============================================================
+     SECTION 4: KEY IMPROVEMENTS (Nichol & Dhariwal 2021)
+     ============================================================ -->
+
+# Key Improvements {background-color="#1a1a2e"}
+
+::: notes
+**WHAT TO SAY:** "Now let's talk about the improvements that Nichol and Dhariwal made in 2021."
+:::
+
+---
+
+## Improvement 1: Learning the Variance
+
+**Ho et al. (2020):** Fixed variance $\Sigma_\theta = \sigma_t^2 I$ (not learned)
+
+. . .
+
+**Nichol & Dhariwal (2021):** Learn it! Network outputs a value $v$ that interpolates:
+
+$$\Sigma_\theta(x_t, t) = \exp\!\left(v \log \beta_t + (1-v) \log \tilde{\beta}_t\right)$$
+
+. . .
+
+where $\tilde{\beta}_t = \frac{1-\bar{\alpha}_{t-1}}{1-\bar{\alpha}_t}\beta_t$ is the posterior variance.
+
+. . .
+
+**Training:** Use a hybrid loss: $\mathcal{L}_{\text{hybrid}} = \mathcal{L}_{\text{simple}} + \lambda \cdot \mathcal{L}_{\text{vlb}}$ with $\lambda = 0.001$
+
+- $\mathcal{L}_{\text{simple}}$ drives the mean (sample quality)
+- $\mathcal{L}_{\text{vlb}}$ drives the variance (log-likelihood)
+
+[@nichol2021improved]
+
+::: notes
+**WHAT TO SAY:** "The first improvement: instead of fixing the variance, learn it. The network outputs a value v that interpolates between two known bounds — beta_t and the posterior variance beta-tilde_t. They use a hybrid loss that combines the simple loss with a small weight on the full variational bound. This is important because it enables the next big benefit..."
+
+**WHAT THIS MEANS:** $\tilde{\beta}_t$ is optimal if data were a single point; $\beta_t$ is optimal for pure Gaussian data. Real data is somewhere in between, so we let the network learn where.
+:::
+
+---
+
+## Improvement 2: Fast Sampling with Learned Variance
+
+With learned variance, you can use **fewer sampling steps** with minimal quality loss.
+
+. . .
+
+| Steps | Method | FID (lower = better) |
+|-------|--------|-----|
+| 4000 | Full DDPM | ~11 |
+| 100 | $\mathcal{L}_{\text{simple}}$ (fixed $\sigma$) | ~20-25 |
+| 100 | $\mathcal{L}_{\text{hybrid}}$ (learned $\Sigma$) | ~15 |
+| 25 | $\mathcal{L}_{\text{hybrid}}$ (learned $\Sigma$) | ~20 |
+
+. . .
+
+**Going from minutes → seconds per image!** But can we go even faster?
+
+::: notes
+**WHAT TO SAY:** "Here's why learning the variance matters in practice. With a fixed variance, cutting from 4000 steps to 100 badly hurts quality. But with learned variance, 100 steps gives reasonable quality — and even 25 steps is usable. This takes generation from minutes down to seconds. But can we push it further? Can we generate in just 1 or 2 steps?"
+:::
+
+---
+
+## Improvement 3: Scaling & Log-Likelihood Results
+
+Nichol & Dhariwal showed DDPMs achieve **competitive log-likelihoods**:
+
+. . .
+
+| Model | NLL (bits/dim) ↓ |
+|-------|-------------------|
+| Sparse Transformer | 2.80 |
+| Very Deep VAE | 2.87 |
+| PixelSNAIL | 2.85 |
+| **Improved DDPM** | **2.94** |
+
+. . .
+
+Plus: DDPMs have **much higher recall** than GANs (better mode coverage).
+
+::: notes
+**WHAT TO SAY:** "They also showed DDPMs can match autoregressive models on log-likelihood — previously thought impossible for diffusion models. And importantly, DDPMs achieve much higher recall than GANs, meaning they cover the full distribution rather than just generating a few easy modes. This is measured by precision/recall metrics."
+
+**WHAT THIS MEANS:** Recall = what fraction of real images are 'covered' by the generative model. GANs have low recall (mode collapse). DDPMs have high recall (diverse samples).
+:::
+
+<!-- ============================================================
+     SECTION 5: APPLICATIONS & RESULTS
+     ============================================================ -->
+
+# Applications & Real-World Impact {background-color="#1a1a2e"}
+
+---
+
+## Original DDPM Results (Ho et al. 2020)
+
+:::: columns
+::: {.column width="50%"}
+**CIFAR-10 (32×32)**
+
+- FID = **3.17** (state-of-the-art at time)
+- IS = 9.46
+- Beat all previous non-GAN methods
+
+**CelebA-HQ (256×256)**
+
+- High-quality face generation
+- Quality comparable to ProgressiveGAN
+:::
+
+::: {.column width="50%"}
+**Key properties demonstrated:**
+
+- Progressive generation (coarse → fine)
+- Smooth latent interpolation
+- Lossy compression interpretation
+- Connection to score matching
+
+*Figures: see Ho et al. 2020, Figs. 1, 6-8*
+:::
+::::
+
+::: notes
+**WHAT TO SAY:** "The original DDPM paper demonstrated impressive results. On CIFAR-10, they achieved an FID of 3.17 — beating all previous non-adversarial methods. They also showed beautiful face generation on CelebA-HQ at 256x256 resolution. Beyond raw quality, they demonstrated cool properties: progressive generation where structure emerges gradually from noise, smooth interpolation in latent space, and a connection to lossy compression where most bits describe imperceptible details."
+:::
+
+---
+
+## Beyond Images: Where Diffusion Models Are Used Today
+
+. . .
+
+🎵 **Audio:** WaveGrad, DiffWave — high-fidelity speech synthesis [@chen2020wavegrad]
+
+. . .
+
+🧬 **Protein Design:** RFdiffusion — generating new protein structures for drug discovery [@watson2023rfdiffusion]
+
+. . .
+
+🌤️ **Weather Forecasting:** GenCast by DeepMind — probabilistic weather ensembles [@price2024gencast]
+
+. . .
+
+🎬 **Video:** Generating temporally coherent video sequences
+
+. . .
+
+🖼️ **Text-to-Image:** DALL·E 2, Stable Diffusion, Imagen — all built on diffusion [@rombach2022latentdiffusion]
+
+::: notes
+**WHAT TO SAY:** "Diffusion models have exploded far beyond academic image benchmarks. They're used in audio generation — WaveGrad generates speech from spectrograms. In biology, RFdiffusion uses diffusion to design entirely new protein structures. Google DeepMind's GenCast uses diffusion for weather forecasting that beats traditional numerical methods. And of course, all the text-to-image systems you've heard of — DALL-E, Stable Diffusion, Midjourney — are built on diffusion models. The core math we showed today is the foundation for all of these."
+:::
+
+<!-- ============================================================
+     SECTION 6: THE SPEED PROBLEM & CONSISTENCY MODELS
+     ============================================================ -->
+
+# The Speed Problem & Consistency Models {background-color="#1a1a2e"}
+
+::: notes
+**WHAT TO SAY:** "Now we get to the main limitation and an exciting recent solution."
+:::
+
+---
+
+## The Speed Problem
+
+DDPMs require **hundreds to thousands** of network evaluations per sample.
+
+. . .
+
+| Method | Steps Needed | Time per Image |
+|--------|-------------|---------------|
+| DDPM (Ho 2020) | 1000 | ~minutes |
+| Improved DDPM (Nichol 2021) | 100 | ~seconds |
+| DDIM (Song 2020) | 50 | ~seconds |
+| DPM-Solver | 10-20 | sub-second |
+| **Consistency Models** | **1-2** | **milliseconds** |
+
+. . .
+
+**Question:** Can we map noise → data in a **single step** without losing quality?
+
+::: notes
+**WHAT TO SAY:** "This table shows the progression. Original DDPM: 1000 steps, takes minutes. Various improvements got it down to tens of steps. But consistency models — introduced by Song et al. in 2023 — can generate in just 1 or 2 steps. That's a 1000x reduction in compute at sampling time."
+:::
+
+---
+
+## Consistency Models: The Key Idea
+
+**Diffusion models** define smooth trajectories from data → noise (via the Probability Flow ODE).
+
+. . .
+
+**Consistency models** learn to map **any point on the trajectory directly to its origin**:
+
+::: {.key-eq}
+$$f_\theta(x_t, t) = x_0 \quad \text{for any } t \in [\epsilon, T]$$
+:::
+
+. . .
+
+**Self-consistency property:** All points on the same trajectory give the same output:
+
+$$f_\theta(x_t, t) = f_\theta(x_{t'}, t') \quad \text{if } x_t, x_{t'} \text{ are on the same ODE trajectory}$$
+
+[@song2023consistency]
+
+::: notes
+**WHAT TO SAY:** "Here's the brilliant idea from Song et al. Diffusion models define smooth paths — ODE trajectories — from data to noise. Instead of walking along this path step by step, what if we trained a network to jump directly to the endpoint? Given any noisy image x_t at any noise level t, the consistency model f_theta outputs the clean image x_0 directly. The key property they enforce is self-consistency: two points on the same trajectory must map to the same clean image."
+
+**WHAT THIS MEANS:** The Probability Flow ODE comes from the SDE formulation of diffusion. It says: there exists a deterministic ODE whose marginals at each time t match the diffusion process. Each ODE trajectory connects one clean image to one noise vector uniquely.
+:::
+
+---
+
+## Two Ways to Train Consistency Models
+
+. . .
+
+**1. Consistency Distillation (CD)** — uses a pre-trained diffusion model
+
+- Take adjacent points on ODE trajectory (computed via the pre-trained model)
+- Train: $f_\theta(x_{t_{n+1}}, t_{n+1}) \approx f_{\theta^-}(x_{t_n}, t_n)$
+- Best results: **FID 3.55** on CIFAR-10 with **1 step**!
+
+. . .
+
+**2. Consistency Training (CT)** — standalone, no pre-trained model
+
+- Uses the unbiased score estimator: $\nabla \log p_t(x_t) \approx -(x_t - x) / t^2$
+- Makes consistency models an **independent** generative model family
+- FID 8.70 on CIFAR-10 (1 step) — still beats VAEs and flows
+
+::: notes
+**WHAT TO SAY:** "There are two training modes. Consistency Distillation starts with an already-trained diffusion model and distills its knowledge into a one-step generator. This gives the best results — 3.55 FID with just one step on CIFAR-10. Consistency Training doesn't need a pre-trained model at all — it trains from scratch using an unbiased score estimator. The quality isn't as good, but it makes consistency models a fully independent class of generative models."
+
+**WHAT THIS MEANS:** Distillation = teacher-student paradigm. The expensive diffusion model is the 'teacher' and the fast consistency model is the 'student' that learns to shortcut the process.
+:::
+
+---
+
+## Consistency Model Results
+
+| Dataset | Method | Steps | FID ↓ |
+|---------|--------|-------|-------|
+| CIFAR-10 | DDPM (Ho 2020) | 1000 | 3.17 |
+| CIFAR-10 | EDM (Karras 2022) | 35 | 2.04 |
+| CIFAR-10 | **CD (Song 2023)** | **1** | **3.55** |
+| CIFAR-10 | **CD (Song 2023)** | **2** | **2.93** |
+| ImageNet 64 | **CD (Song 2023)** | **1** | **6.20** |
+| ImageNet 64 | **CD (Song 2023)** | **2** | **4.70** |
+
+. . .
+
+**One-step** consistency distillation nearly matches **1000-step** DDPM!
+
+::: notes
+**WHAT TO SAY:** "Look at these numbers. The original DDPM needed 1000 steps to get FID 3.17 on CIFAR-10. Consistency distillation gets 3.55 with just ONE step, and 2.93 with TWO steps — actually beating the original DDPM. On ImageNet 64x64, single-step gets 6.20 FID. This is a massive practical improvement."
+:::
+
+---
+
+## Zero-Shot Editing: No Extra Training Needed
+
+Consistency models can perform image editing tasks **they were never trained for**:
+
+. . .
+
+:::: columns
+::: {.column width="50%"}
+- **Colorization:** grayscale → color
+- **Super-resolution:** 32×32 → 256×256
+- **Inpainting:** fill missing regions
+:::
+::: {.column width="50%"}
+- **Stroke-guided generation:** rough sketch → image
+- **Denoising:** clean up noisy images
+- **Interpolation:** blend between samples
+:::
+::::
+
+. . .
+
+All done by modifying the multistep sampling algorithm — not retraining!
+
+*See Song et al. 2023, Figure 6 for visual examples.*
+
+::: notes
+**WHAT TO SAY:** "Perhaps the coolest thing about consistency models is zero-shot editing. A model trained ONLY to generate bedrooms can also colorize grayscale images, upscale low-resolution images, fill in missing patches, and even turn rough sketches into realistic images — all without any additional training. This works because the model has learned the underlying data distribution so well that it can solve these inverse problems by modifying the sampling procedure."
+:::
+
+<!-- ============================================================
+     SECTION 7: LIMITATIONS & FUTURE WORK
+     ============================================================ -->
+
+# Limitations & Future Directions {background-color="#1a1a2e"}
+
+---
+
+## Current Limitations
+
+. . .
+
+**Sampling speed** — Even with consistency models, quality vs. speed tradeoff exists
+
+. . .
+
+**Training cost** — Still requires many GPUs and days/weeks of training
+
+. . .
+
+**Memory** — Full-resolution latent variables at each step (→ Latent Diffusion helps)
+
+. . .
+
+**Theory gaps** — Why does $\mathcal{L}_{\text{simple}}$ outperform the true variational bound?
+
+. . .
+
+**Evaluation** — FID/IS are imperfect metrics for generative quality
+
+::: notes
+**WHAT TO SAY:** "Despite the impressive results, there are clear limitations. Sampling speed has improved dramatically but training is still expensive. Memory usage is high — which motivated latent diffusion models like Stable Diffusion that operate in a compressed space. Theoretically, we still don't fully understand why the simplified loss works better than the full variational bound. And our evaluation metrics like FID are known to be imperfect."
+:::
+
+---
+
+## Future Directions
+
+. . .
+
+- **Even faster sampling:** Improved distillation, better ODE solvers
+- **Latent diffusion:** Operating in compressed space (Stable Diffusion approach)
+- **Better conditioning:** Text, audio, 3D, multi-modal inputs
+- **Continuous-time formulation:** Score-based SDEs — elegant unified theory [@song2021scorebased]
+- **New domains:** Scientific discovery, drug design, climate modeling
+- **Theoretical understanding:** Convergence guarantees, loss landscape analysis
+
+::: notes
+**WHAT TO SAY:** "Looking ahead, research continues on faster sampling, better architectures, and new applications. The SDE formulation by Song et al. 2021 provides a beautiful unified view. New domains keep emerging — protein design, weather, materials science. And there's important theoretical work to be done understanding why these models work so well."
+:::
+
+<!-- ============================================================
+     SECTION 8: SUMMARY & REFERENCES
+     ============================================================ -->
+
+# Summary {background-color="#1a1a2e"}
+
+---
+
+## What We Covered
+
+| Topic | Key Takeaway |
+|-------|-------------|
+| **Forward Process** | Destroy data with known Gaussian noise; $x_t = \sqrt{\bar{\alpha}_t}x_0 + \sqrt{1-\bar{\alpha}_t}\varepsilon$ |
+| **Reverse Process** | Neural net learns to denoise; predicts noise $\varepsilon_\theta(x_t, t)$ |
+| **Training** | Simple MSE loss: $\|\varepsilon - \varepsilon_\theta\|^2$ |
+| **Connection to Stats** | Equivalent to denoising score matching; learns $\nabla \log p(x)$ |
+| **Improvements** | Learned variance + cosine schedule → better quality & faster sampling |
+| **Consistency Models** | Map noise → data in 1 step; zero-shot editing for free |
+
+---
+
+## References
+
+::: {#refs}
+:::
