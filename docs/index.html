@@ -1,0 +1,1861 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<script src="index_files/libs/clipboard/clipboard.min.js"></script>
+<script src="index_files/libs/quarto-html/tabby.min.js"></script>
+<script src="index_files/libs/quarto-html/popper.min.js"></script>
+<script src="index_files/libs/quarto-html/tippy.umd.min.js"></script>
+<link href="index_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="index_files/libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="index_files/libs/quarto-html/quarto-syntax-highlighting-8b4baf804e461d9b72633f0de59a0cac.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
+  <meta name="generator" content="quarto-1.8.27">
+
+  <meta name="author" content="YOUR NAME &amp; TEAMMATE NAME">
+  <meta name="dcterms.date" content="2025-12-31">
+  <title>Denoising Diffusion Probabilistic Models</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="index_files/libs/revealjs/dist/reset.css">
+  <link rel="stylesheet" href="index_files/libs/revealjs/dist/reveal.css">
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+      }
+    pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+    div.sourceCode
+      { color: #24292e;  }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span { color: #24292e; } /* Normal */
+    code span.al { color: #ff5555; font-weight: bold; } /* Alert */
+    code span.an { color: #6a737d; } /* Annotation */
+    code span.at { color: #d73a49; } /* Attribute */
+    code span.bn { color: #005cc5; } /* BaseN */
+    code span.bu { color: #d73a49; } /* BuiltIn */
+    code span.cf { color: #d73a49; } /* ControlFlow */
+    code span.ch { color: #032f62; } /* Char */
+    code span.cn { color: #005cc5; } /* Constant */
+    code span.co { color: #6a737d; } /* Comment */
+    code span.cv { color: #6a737d; } /* CommentVar */
+    code span.do { color: #6a737d; } /* Documentation */
+    code span.dt { color: #d73a49; } /* DataType */
+    code span.dv { color: #005cc5; } /* DecVal */
+    code span.er { color: #ff5555; text-decoration: underline; } /* Error */
+    code span.ex { color: #d73a49; font-weight: bold; } /* Extension */
+    code span.fl { color: #005cc5; } /* Float */
+    code span.fu { color: #6f42c1; } /* Function */
+    code span.im { color: #032f62; } /* Import */
+    code span.in { color: #6a737d; } /* Information */
+    code span.kw { color: #d73a49; } /* Keyword */
+    code span.op { color: #24292e; } /* Operator */
+    code span.ot { color: #6f42c1; } /* Other */
+    code span.pp { color: #d73a49; } /* Preprocessor */
+    code span.re { color: #6a737d; } /* RegionMarker */
+    code span.sc { color: #005cc5; } /* SpecialChar */
+    code span.ss { color: #032f62; } /* SpecialString */
+    code span.st { color: #032f62; } /* String */
+    code span.va { color: #e36209; } /* Variable */
+    code span.vs { color: #032f62; } /* VerbatimString */
+    code span.wa { color: #ff5555; } /* Warning */
+    /* CSS for citations */
+    div.csl-bib-body { }
+    div.csl-entry {
+      clear: both;
+      margin-bottom: 0em;
+    }
+    .hanging-indent div.csl-entry {
+      margin-left:2em;
+      text-indent:-2em;
+    }
+    div.csl-left-margin {
+      min-width:2em;
+      float:left;
+    }
+    div.csl-right-inline {
+      margin-left:2em;
+      padding-left:1em;
+    }
+    div.csl-indent {
+      margin-left: 2em;
+    }  </style>
+  <link rel="stylesheet" href="index_files/libs/revealjs/dist/theme/quarto-0fde88a82f0356838740f155f1088782.css">
+  <link href="index_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
+  <link href="index_files/libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
+  <link href="index_files/libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
+  <link href="index_files/libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
+  <style type="text/css">
+    .reveal div.sourceCode {
+      margin: 0;
+      overflow: auto;
+    }
+    .reveal div.hanging-indent {
+      margin-left: 1em;
+      text-indent: -1em;
+    }
+    .reveal .slide:not(.center) {
+      height: 100%;
+    }
+    .reveal .slide.scrollable {
+      overflow-y: auto;
+    }
+    .reveal .footnotes {
+      height: 100%;
+      overflow-y: auto;
+    }
+    .reveal .slide .absolute {
+      position: absolute;
+      display: block;
+    }
+    .reveal .footnotes ol {
+      counter-reset: ol;
+      list-style-type: none; 
+      margin-left: 0;
+    }
+    .reveal .footnotes ol li:before {
+      counter-increment: ol;
+      content: counter(ol) ". "; 
+    }
+    .reveal .footnotes ol li > p:first-child {
+      display: inline-block;
+    }
+    .reveal .slide ul,
+    .reveal .slide ol {
+      margin-bottom: 0.5em;
+    }
+    .reveal .slide ul li,
+    .reveal .slide ol li {
+      margin-top: 0.4em;
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide ul[role="tablist"] li {
+      margin-bottom: 0;
+    }
+    .reveal .slide ul li > *:first-child,
+    .reveal .slide ol li > *:first-child {
+      margin-block-start: 0;
+    }
+    .reveal .slide ul li > *:last-child,
+    .reveal .slide ol li > *:last-child {
+      margin-block-end: 0;
+    }
+    .reveal .slide .columns:nth-child(3) {
+      margin-block-start: 0.8em;
+    }
+    .reveal blockquote {
+      box-shadow: none;
+    }
+    .reveal .tippy-content>* {
+      margin-top: 0.2em;
+      margin-bottom: 0.7em;
+    }
+    .reveal .tippy-content>*:last-child {
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide > img.stretch.quarto-figure-center,
+    .reveal .slide > img.r-stretch.quarto-figure-center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-left,
+    .reveal .slide > img.r-stretch.quarto-figure-left  {
+      display: block;
+      margin-left: 0;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-right,
+    .reveal .slide > img.r-stretch.quarto-figure-right  {
+      display: block;
+      margin-left: auto;
+      margin-right: 0; 
+    }
+  </style>
+</head>
+<body class="quarto-light">
+  <div class="reveal">
+    <div class="slides">
+
+<section id="title-slide" class="quarto-title-block center">
+  <h1 class="title">Denoising Diffusion Probabilistic Models</h1>
+  <p class="subtitle">From Theory to Fast Sampling: DDPM, Improvements &amp; Consistency Models</p>
+
+<div class="quarto-title-authors">
+<div class="quarto-title-author">
+<div class="quarto-title-author-name">
+YOUR NAME &amp; TEAMMATE NAME 
+</div>
+</div>
+</div>
+
+  <p class="date">2025-12-31</p>
+</section>
+<section class="slide level2 center">
+
+<style>
+.key-eq {
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 4px solid #3b82f6;
+  padding: 0.8em 1em;
+  border-radius: 6px;
+  margin: 0.5em 0;
+}
+</style>
+<!-- ============================================================
+     SECTION 1: INTRODUCTION & MOTIVATION
+     ============================================================ -->
+</section>
+<section>
+<section id="introduction-motivation" class="title-slide slide level1 center" data-background-color="#1a1a2e">
+<h1>Introduction &amp; Motivation</h1>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Hi everyone, today we’re presenting on Denoising Diffusion Probabilistic Models — or DDPMs. These are the generative models behind things like DALL-E, Stable Diffusion, and Midjourney. We’ll cover the core method, key improvements, and a cool recent extension called Consistency Models.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="the-problem-generative-modeling" class="slide level2 center">
+<h2>The Problem: Generative Modeling</h2>
+<p><strong>Goal:</strong> Given training data from some distribution <span class="math inline">\(q(x)\)</span>, learn a model <span class="math inline">\(p_\theta(x)\)</span> that can generate <em>new</em>, realistic samples.</p>
+<div class="fragment">
+<p><strong>Think of it as:</strong> You see 1 million cat photos. Now draw a new cat that <em>could have been</em> a real photo but wasn’t.</p>
+</div>
+<div class="fragment">
+<p><strong>Traditional approaches:</strong></p>
+<table class="caption-top">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 35%">
+<col style="width: 35%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Strength</th>
+<th>Weakness</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>GANs</td>
+<td>Fast sampling, sharp images</td>
+<td>Unstable training, mode collapse</td>
+</tr>
+<tr class="even">
+<td>VAEs</td>
+<td>Stable training, good likelihood</td>
+<td>Blurry samples</td>
+</tr>
+<tr class="odd">
+<td>Autoregressive</td>
+<td>Best likelihoods</td>
+<td>Very slow generation</td>
+</tr>
+<tr class="even">
+<td><strong>Diffusion Models</strong></td>
+<td><strong>Stable + high quality</strong></td>
+<td><strong>Slow sampling</strong></td>
+</tr>
+</tbody>
+</table>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “The generative modeling problem is: given training data, learn to create new realistic samples. There are several approaches. GANs are fast but hard to train. VAEs are stable but blurry. Diffusion models give us the best of both worlds — stable training AND high quality — but they’re slow at sampling. That slowness is a key limitation we’ll address later.”</p>
+<p><strong>WHAT THIS MEANS:</strong> Mode collapse = GAN only learns to generate a few types of images, ignoring the rest. Diffusion models don’t have this problem.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="the-diffusion-idea-in-one-sentence" class="slide level2 center">
+<h2>The Diffusion Idea in One Sentence</h2>
+<blockquote>
+<p><strong>Slowly destroy data by adding noise, then train a neural network to reverse each tiny step.</strong></p>
+</blockquote>
+<div class="fragment">
+<div class="columns">
+<div class="column" style="width:45%;">
+<h3 id="forward-process-destroy">Forward Process (destroy)</h3>
+<ul>
+<li>Start with a clean image <span class="math inline">\(x_0\)</span></li>
+<li>Add a little Gaussian noise at each step</li>
+<li>After <span class="math inline">\(T=1000\)</span> steps → pure random noise</li>
+<li><strong>No learning required</strong> — this is just math</li>
+</ul>
+</div><div class="column" style="width:10%;">
+
+</div><div class="column" style="width:45%;">
+<h3 id="reverse-process-create">Reverse Process (create)</h3>
+<ul>
+<li>Start from pure noise <span class="math inline">\(x_T \sim \mathcal{N}(0, I)\)</span></li>
+<li>Use a neural net to remove noise step by step</li>
+<li>After <span class="math inline">\(T\)</span> denoising steps → a realistic image</li>
+<li><strong>This is what we learn</strong></li>
+</ul>
+</div></div>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Here’s the core idea. Imagine you have a photo. You slowly add static to it — like an old TV. After 1000 steps it’s pure random noise. Now, if you could train a neural network to undo each tiny step of that corruption, you could start from noise and walk backwards to create a brand new image. The forward destruction is just math — we choose it. The reverse reconstruction is what the neural network learns.”</p>
+<p><strong>WHAT THIS MEANS:</strong> The forward process is like a known recipe for making a mess. The reverse process is learning to clean up.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="why-not-just-generate-directly" class="slide level2 center">
+<h2>Why Not Just Generate Directly?</h2>
+<p>Generating a full image from scratch in one shot is <strong>extremely hard</strong>.</p>
+<div class="fragment">
+<p>But removing a <em>tiny bit</em> of noise? That’s a <strong>simple regression problem</strong>.</p>
+</div>
+<div class="fragment">
+<p>DDPM breaks one hard problem into 1000 easy problems:</p>
+<p><span class="math display">\[\underbrace{\text{noise}}_{\text{easy to sample}} \xrightarrow{\text{step 1}} \xrightarrow{\text{step 2}} \cdots \xrightarrow{\text{step T}} \underbrace{\text{data}}_{\text{what we want}}\]</span></p>
+<p>This is the key insight from <span class="citation" data-cites="sohldickstein2015deep">Sohl-Dickstein et al. (<a href="#/references" role="doc-biblioref" onclick="">2015</a>)</span>, refined by <span class="citation" data-cites="ho2020ddpm">Ho, Jain, and Abbeel (<a href="#/references" role="doc-biblioref" onclick="">2020</a>)</span>.</p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Why go through all this trouble? Because generating a realistic image from scratch is incredibly difficult. But if I show you an image with just a tiny bit of noise and ask ‘what’s the clean version?’ — that’s easy! DDPMs decompose one impossible task into a thousand easy ones. This idea was introduced by Sohl-Dickstein in 2015 and made practical by Ho et al.&nbsp;in 2020.”</p>
+<p><strong>WHAT THIS MEANS for statistics:</strong> This connects to hierarchical models and Markov chains. Each step is a simple conditional distribution — we’re just chaining many simple steps.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+<!-- ============================================================
+     SECTION 2: THE METHOD (Core Math)
+     ============================================================ -->
+</div>
+</section></section>
+<section>
+<section id="the-method-core-mathematics" class="title-slide slide level1 center" data-background-color="#1a1a2e">
+<h1>The Method: Core Mathematics</h1>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Now let’s get into the actual math. Don’t worry — I’ll explain what each equation means in plain English.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="step-1-the-forward-process-adding-noise" class="slide level2 center">
+<h2>Step 1: The Forward Process (Adding Noise)</h2>
+<p>At each timestep, slightly shrink the image and add noise:</p>
+<p><span class="math display">\[q(x_t \mid x_{t-1}) = \mathcal{N}\!\left(x_t;\; \sqrt{1-\beta_t}\, x_{t-1},\; \beta_t\, I\right)\]</span></p>
+<div class="fragment">
+<ul>
+<li><span class="math inline">\(\beta_t\)</span> = <strong>noise schedule</strong> — small numbers (e.g., <span class="math inline">\(\beta_1 = 0.0001\)</span>, <span class="math inline">\(\beta_T = 0.02\)</span>)</li>
+<li><span class="math inline">\(\sqrt{1-\beta_t} \approx 0.99999\)</span> — barely shrinks the image</li>
+<li><span class="math inline">\(\beta_t\)</span> — amount of new noise added at step <span class="math inline">\(t\)</span></li>
+<li>After 1000 steps of this, the image is destroyed</li>
+</ul>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “The forward process is a Markov chain. At each step t, we take the previous image, multiply it by a number very close to 1 — so barely shrinking it — and add a small amount of Gaussian noise. Beta-t controls how much noise we add. After doing this 1000 times, the original image is completely buried in noise.”</p>
+<p><strong>WHAT THIS MEANS:</strong> <span class="math inline">\(\mathcal{N}(\mu, \sigma^2)\)</span> means Gaussian with mean <span class="math inline">\(\mu\)</span> and variance <span class="math inline">\(\sigma^2\)</span>. So the mean of <span class="math inline">\(x_t\)</span> is approximately <span class="math inline">\(x_{t-1}\)</span> (slightly shrunk), plus fresh noise.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="the-shortcut-jump-to-any-timestep-directly" class="slide level2 center">
+<h2>The Shortcut: Jump to Any Timestep Directly</h2>
+<p>Define: <span class="math inline">\(\alpha_t = 1 - \beta_t\)</span> and <span class="math inline">\(\bar{\alpha}_t = \prod_{s=1}^{t} \alpha_s\)</span> (cumulative product)</p>
+<div class="fragment">
+<div class="key-eq">
+<p><span class="math display">\[q(x_t \mid x_0) = \mathcal{N}\!\left(x_t;\; \sqrt{\bar{\alpha}_t}\, x_0,\; (1-\bar{\alpha}_t)\, I\right)\]</span></p>
+</div>
+</div>
+<div class="fragment">
+<p>In practice, to get <span class="math inline">\(x_t\)</span> from <span class="math inline">\(x_0\)</span>:</p>
+<p><span class="math display">\[\boxed{x_t = \sqrt{\bar{\alpha}_t}\; x_0 + \sqrt{1 - \bar{\alpha}_t}\; \varepsilon, \qquad \varepsilon \sim \mathcal{N}(0, I)}\]</span></p>
+</div>
+<div class="fragment">
+<ul>
+<li><span class="math inline">\(\sqrt{\bar{\alpha}_t}\)</span> = how much <strong>original signal</strong> remains</li>
+<li><span class="math inline">\(\sqrt{1 - \bar{\alpha}_t}\)</span> = how much <strong>noise</strong> there is</li>
+<li><strong>No need to go step by step</strong> — jump straight to any noise level!</li>
+</ul>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Here’s the beautiful part. Because Gaussians combine so nicely, we don’t need to go through all 1000 steps to get x_t. We can jump directly from clean data x_0 to any noise level t using this formula. Alpha-bar-t is just the running product of all the (1 - beta) values. When alpha-bar is close to 1 — early steps — most of the original image is preserved. When it’s close to 0 — late steps — it’s mostly noise. This is critical for training: we can randomly pick any timestep t and immediately create training data.”</p>
+<p><strong>WHAT THIS MEANS:</strong> <span class="math inline">\(\bar{\alpha}_t\)</span> controls the signal-to-noise ratio. Think of it as: what fraction of the image is ‘real signal’ vs ‘noise.’ The Signal-to-Noise Ratio is <span class="math inline">\(\text{SNR}(t) = \frac{\bar{\alpha}_t}{1 - \bar{\alpha}_t}\)</span>.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="step-2-the-reverse-process-what-we-learn" class="slide level2 center">
+<h2>Step 2: The Reverse Process (What We Learn)</h2>
+<p>We want to learn the reverse: <span class="math inline">\(p_\theta(x_{t-1} \mid x_t)\)</span></p>
+<div class="fragment">
+<p>Since each forward step adds only a <em>tiny</em> bit of noise, the reverse step is also approximately Gaussian:</p>
+<p><span class="math display">\[p_\theta(x_{t-1} \mid x_t) = \mathcal{N}\!\left(x_{t-1};\; \mu_\theta(x_t, t),\; \Sigma_\theta(x_t, t)\right)\]</span></p>
+</div>
+<div class="fragment">
+<p>A <strong>U-Net</strong> neural network takes in <span class="math inline">\((x_t, t)\)</span> and predicts the parameters.</p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Now for the reverse. We need to learn p_theta — the denoising step. Since each forward step is a tiny Gaussian perturbation, the reverse is also approximately Gaussian. So our neural network just needs to predict the mean and variance of this Gaussian. The architecture used is a U-Net — an encoder-decoder network with skip connections, originally designed for image segmentation. It takes in the noisy image plus the timestep number, and outputs the denoising parameters.”</p>
+<p><strong>WHAT THIS MEANS:</strong> The U-Net is shared across ALL timesteps (parameter tying). The timestep t is fed in via positional embeddings — like in Transformers — so the same network can handle any noise level.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="step-3-the-varepsilon-prediction-trick" class="slide level2 center">
+<h2>Step 3: The <span class="math inline">\(\varepsilon\)</span>-Prediction Trick</h2>
+<p>Instead of predicting <span class="math inline">\(\mu_\theta\)</span> directly, predict the <strong>noise</strong> <span class="math inline">\(\varepsilon\)</span> that was added:</p>
+<div class="fragment">
+<div class="key-eq">
+<p><strong>Network learns:</strong> <span class="math inline">\(\varepsilon_\theta(x_t, t) \approx \varepsilon\)</span> (the actual noise added)</p>
+</div>
+</div>
+<div class="fragment">
+<p>Why? Because we know: <span class="math inline">\(x_t = \sqrt{\bar{\alpha}_t}\, x_0 + \sqrt{1-\bar{\alpha}_t}\, \varepsilon\)</span></p>
+<p>So if we predict <span class="math inline">\(\varepsilon\)</span>, we can recover both <span class="math inline">\(x_0\)</span> and <span class="math inline">\(\mu\)</span>:</p>
+<p><span class="math display">\[\hat{x}_0 = \frac{1}{\sqrt{\bar{\alpha}_t}}\left(x_t - \sqrt{1-\bar{\alpha}_t}\;\varepsilon_\theta(x_t, t)\right)\]</span></p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Ho et al.&nbsp;discovered a clever trick. Instead of making the network predict the mean directly, they have it predict the noise epsilon that was added. This works because we know exactly how x_t relates to x_0 and epsilon. If the network correctly predicts what noise was added, we can immediately recover the clean image. This reparameterization was key to getting good results.”</p>
+<p><strong>WHAT THIS MEANS for statistics:</strong> This is deeply connected to <strong>denoising score matching</strong>. The noise prediction <span class="math inline">\(\varepsilon_\theta\)</span> is proportional to the <strong>score function</strong> <span class="math inline">\(\nabla_x \log p(x_t)\)</span> — the gradient of the log-density. So training a diffusion model is essentially learning the score at multiple noise levels.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="step-4-the-training-loss" class="slide level2 center">
+<h2>Step 4: The Training Loss</h2>
+<div class="key-eq">
+<p><span class="math display">\[\mathcal{L}_{\text{simple}} = \mathbb{E}_{t,\, x_0,\, \varepsilon}\left[\;\left\|\varepsilon - \varepsilon_\theta\!\left(\sqrt{\bar{\alpha}_t}\, x_0 + \sqrt{1-\bar{\alpha}_t}\,\varepsilon,\;\; t\right)\right\|^2\;\right]\]</span></p>
+</div>
+<div class="fragment">
+<p><strong>Training algorithm (in plain English):</strong></p>
+<ol type="1">
+<li>Sample a clean image <span class="math inline">\(x_0\)</span> from training data</li>
+<li>Pick a random timestep <span class="math inline">\(t \sim \text{Uniform}(1, T)\)</span></li>
+<li>Sample noise <span class="math inline">\(\varepsilon \sim \mathcal{N}(0, I)\)</span></li>
+<li>Create noisy image: <span class="math inline">\(x_t = \sqrt{\bar{\alpha}_t}\, x_0 + \sqrt{1-\bar{\alpha}_t}\,\varepsilon\)</span></li>
+<li>Ask network to predict the noise: <span class="math inline">\(\hat{\varepsilon} = \varepsilon_\theta(x_t, t)\)</span></li>
+<li>Loss <span class="math inline">\(= \|\varepsilon - \hat{\varepsilon}\|^2\)</span> (mean squared error)</li>
+</ol>
+</div>
+<div class="fragment">
+<p>That’s it. Beautifully simple. <span class="citation" data-cites="ho2020ddpm">(<a href="#/references" role="doc-biblioref" onclick="">Ho, Jain, and Abbeel 2020</a>)</span></p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “The training loss is almost shockingly simple. Take a clean image, pick a random timestep, add noise, and ask the network to predict what noise you added. The loss is just mean squared error between the real noise and the predicted noise. That’s the entire training procedure. Ho et al.&nbsp;showed this simplified loss — which they call L-simple — gives much better image quality than the full variational bound.”</p>
+<p><strong>WHAT THIS MEANS:</strong> This simplified loss down-weights easy timesteps (small t, little noise) so the network focuses on harder denoising tasks. It’s a reweighted version of the Evidence Lower Bound (ELBO). The connection: <span class="math inline">\(\mathcal{L}_\text{simple}\)</span> is equivalent to denoising score matching across multiple noise levels <span class="citation" data-cites="song2019scorematching">(<a href="#/references" role="doc-biblioref" onclick="">Song and Ermon 2019</a>)</span>.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="step-5-sampling-generating-new-images" class="slide level2 center">
+<h2>Step 5: Sampling (Generating New Images)</h2>
+<pre><code>Algorithm: DDPM Sampling
+─────────────────────────
+1.  Sample x_T ~ N(0, I)              ← start from pure noise
+2.  For t = T, T-1, ..., 1:
+      z ~ N(0, I) if t &gt; 1, else z = 0
+      x_{t-1} = (1/√α_t)(x_t - β_t/√(1-ᾱ_t) · ε_θ(x_t, t)) + σ_t · z
+3.  Return x_0                         ← your generated image!</code></pre>
+<div class="fragment">
+<p><strong>Key observation:</strong> This requires <strong>T network evaluations</strong> (typically T=1000).</p>
+<p>Each evaluation = one full pass through the U-Net → <strong>sampling is slow!</strong></p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “To generate an image, we start from pure random noise and iteratively denoise. At each step, the network predicts the noise, we partially remove it, and add a bit of fresh noise for stochasticity. After T steps, we get a clean image. The problem? T is typically 1000. That means 1000 forward passes through a large neural network to generate a single image. This takes minutes on a modern GPU, which is a big practical limitation.”</p>
+<p><strong>WHAT THIS MEANS:</strong> The sampling formula resembles <strong>Langevin dynamics</strong> — a method from statistical physics for sampling from a distribution using its score function. The learned <span class="math inline">\(\varepsilon_\theta\)</span> plays the role of the score.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+<!-- ============================================================
+     SECTION 3: DEMO - FORWARD PROCESS
+     ============================================================ -->
+</div>
+</section></section>
+<section>
+<section id="demo-watching-diffusion-work" class="title-slide slide level1 center" data-background-color="#1a1a2e">
+<h1>Demo: Watching Diffusion Work</h1>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Let me show you what the forward process actually looks like on a real image.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="forward-diffusion-destroying-an-image" class="slide level2 center">
+<h2>Forward Diffusion: Destroying an Image</h2>
+<div id="cell-fig-forward-noise" class="cell" data-execution_count="1">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href=""></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb2-2"><a href=""></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb2-3"><a href=""></a></span>
+<span id="cb2-4"><a href=""></a><span class="co"># ── Create a simple test image (8x8 checkerboard scaled up) ──</span></span>
+<span id="cb2-5"><a href=""></a><span class="co"># Replace this with: Image.open("assets/demo/input.jpg") for a real photo</span></span>
+<span id="cb2-6"><a href=""></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb2-7"><a href=""></a>block <span class="op">=</span> <span class="dv">16</span></span>
+<span id="cb2-8"><a href=""></a>pattern <span class="op">=</span> np.zeros((<span class="dv">8</span><span class="op">*</span>block, <span class="dv">8</span><span class="op">*</span>block, <span class="dv">3</span>), dtype<span class="op">=</span>np.float32)</span>
+<span id="cb2-9"><a href=""></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">8</span>):</span>
+<span id="cb2-10"><a href=""></a>    <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">8</span>):</span>
+<span id="cb2-11"><a href=""></a>        <span class="cf">if</span> (i <span class="op">+</span> j) <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb2-12"><a href=""></a>            pattern[i<span class="op">*</span>block:(i<span class="op">+</span><span class="dv">1</span>)<span class="op">*</span>block, j<span class="op">*</span>block:(j<span class="op">+</span><span class="dv">1</span>)<span class="op">*</span>block] <span class="op">=</span> [<span class="fl">0.9</span>, <span class="fl">0.3</span>, <span class="fl">0.2</span>]</span>
+<span id="cb2-13"><a href=""></a>        <span class="cf">else</span>:</span>
+<span id="cb2-14"><a href=""></a>            pattern[i<span class="op">*</span>block:(i<span class="op">+</span><span class="dv">1</span>)<span class="op">*</span>block, j<span class="op">*</span>block:(j<span class="op">+</span><span class="dv">1</span>)<span class="op">*</span>block] <span class="op">=</span> [<span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">0.9</span>]</span>
+<span id="cb2-15"><a href=""></a>x0 <span class="op">=</span> pattern</span>
+<span id="cb2-16"><a href=""></a></span>
+<span id="cb2-17"><a href=""></a><span class="co"># ── LINEAR noise schedule (Ho et al. 2020) ──</span></span>
+<span id="cb2-18"><a href=""></a>T <span class="op">=</span> <span class="dv">1000</span></span>
+<span id="cb2-19"><a href=""></a>betas <span class="op">=</span> np.linspace(<span class="fl">1e-4</span>, <span class="fl">2e-2</span>, T, dtype<span class="op">=</span>np.float64)</span>
+<span id="cb2-20"><a href=""></a>alphas <span class="op">=</span> <span class="fl">1.0</span> <span class="op">-</span> betas</span>
+<span id="cb2-21"><a href=""></a>alpha_bar <span class="op">=</span> np.cumprod(alphas)</span>
+<span id="cb2-22"><a href=""></a></span>
+<span id="cb2-23"><a href=""></a><span class="kw">def</span> q_sample(x0, t, alpha_bar):</span>
+<span id="cb2-24"><a href=""></a>    <span class="co">"""Forward process: sample x_t given x_0"""</span></span>
+<span id="cb2-25"><a href=""></a>    eps <span class="op">=</span> np.random.randn(<span class="op">*</span>x0.shape)</span>
+<span id="cb2-26"><a href=""></a>    <span class="cf">return</span> (np.sqrt(alpha_bar[t]) <span class="op">*</span> x0 <span class="op">+</span> np.sqrt(<span class="dv">1</span> <span class="op">-</span> alpha_bar[t]) <span class="op">*</span> eps).clip(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb2-27"><a href=""></a></span>
+<span id="cb2-28"><a href=""></a><span class="co"># ── Plot at several timesteps ──</span></span>
+<span id="cb2-29"><a href=""></a>timesteps <span class="op">=</span> [<span class="dv">0</span>, <span class="dv">50</span>, <span class="dv">150</span>, <span class="dv">300</span>, <span class="dv">500</span>, <span class="dv">750</span>, <span class="dv">999</span>]</span>
+<span id="cb2-30"><a href=""></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="bu">len</span>(timesteps), figsize<span class="op">=</span>(<span class="dv">16</span>, <span class="dv">3</span>))</span>
+<span id="cb2-31"><a href=""></a><span class="cf">for</span> ax, t <span class="kw">in</span> <span class="bu">zip</span>(axes, timesteps):</span>
+<span id="cb2-32"><a href=""></a>    xt <span class="op">=</span> q_sample(x0, t, alpha_bar)</span>
+<span id="cb2-33"><a href=""></a>    ax.imshow(xt)</span>
+<span id="cb2-34"><a href=""></a>    ax.set_title(<span class="ss">f"t = </span><span class="sc">{</span>t<span class="sc">}</span><span class="ss">"</span>, fontsize<span class="op">=</span><span class="dv">12</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb2-35"><a href=""></a>    ax.axis(<span class="st">"off"</span>)</span>
+<span id="cb2-36"><a href=""></a>fig.suptitle(<span class="st">"Forward Process: x₀ → x_T (linear schedule)"</span>, fontsize<span class="op">=</span><span class="dv">14</span>, y<span class="op">=</span><span class="fl">1.02</span>)</span>
+<span id="cb2-37"><a href=""></a>plt.tight_layout()</span>
+<span id="cb2-38"><a href=""></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-forward-noise" class="quarto-float quarto-figure quarto-figure-center">
+<figure class="quarto-float quarto-float-fig">
+<div aria-describedby="fig-forward-noise-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img data-src="index_files/figure-revealjs/fig-forward-noise-output-1.png" width="1526" height="288">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-forward-noise-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Forward diffusion with LINEAR schedule: clean image → pure noise over 1000 steps
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Here’s the forward process in action. At t=0 we have our clean image — a colorful checkerboard. As t increases, we add more and more noise following the linear schedule. By t=300, the structure is getting hard to see. By t=500, it’s mostly noise. By t=999, it’s indistinguishable from pure random noise. The model’s job is to learn to reverse this process.”</p>
+<p><strong>CODE EXPLANATION:</strong> - <code>betas = np.linspace(1e-4, 2e-2, T)</code> — creates the linear noise schedule from Ho et al. - <code>alpha_bar = np.cumprod(1 - betas)</code> — the cumulative product that tells us total noise at step t - <code>q_sample</code> implements: <span class="math inline">\(x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1-\bar{\alpha}_t}\varepsilon\)</span> - <code>.clip(0,1)</code> just keeps pixel values valid for display</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="why-the-schedule-matters-snr-comparison" class="slide level2 center">
+<h2>Why the Schedule Matters: SNR Comparison</h2>
+<div id="cell-fig-snr-comparison" class="cell" data-execution_count="2">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href=""></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb3-2"><a href=""></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb3-3"><a href=""></a></span>
+<span id="cb3-4"><a href=""></a>T <span class="op">=</span> <span class="dv">1000</span></span>
+<span id="cb3-5"><a href=""></a></span>
+<span id="cb3-6"><a href=""></a><span class="co"># ── LINEAR schedule (Ho et al. 2020) ──</span></span>
+<span id="cb3-7"><a href=""></a>betas_lin <span class="op">=</span> np.linspace(<span class="fl">1e-4</span>, <span class="fl">2e-2</span>, T)</span>
+<span id="cb3-8"><a href=""></a>alphas_lin <span class="op">=</span> <span class="dv">1</span> <span class="op">-</span> betas_lin</span>
+<span id="cb3-9"><a href=""></a>ab_lin <span class="op">=</span> np.cumprod(alphas_lin)</span>
+<span id="cb3-10"><a href=""></a></span>
+<span id="cb3-11"><a href=""></a><span class="co"># ── COSINE schedule (Nichol &amp; Dhariwal 2021) ──</span></span>
+<span id="cb3-12"><a href=""></a>s <span class="op">=</span> <span class="fl">0.008</span>  <span class="co"># small offset to prevent beta from being too small near t=0</span></span>
+<span id="cb3-13"><a href=""></a>steps <span class="op">=</span> np.arange(T <span class="op">+</span> <span class="dv">1</span>, dtype<span class="op">=</span>np.float64)</span>
+<span id="cb3-14"><a href=""></a>f <span class="op">=</span> np.cos(((steps <span class="op">/</span> T) <span class="op">+</span> s) <span class="op">/</span> (<span class="dv">1</span> <span class="op">+</span> s) <span class="op">*</span> np.pi <span class="op">/</span> <span class="dv">2</span>) <span class="op">**</span> <span class="dv">2</span></span>
+<span id="cb3-15"><a href=""></a>ab_cos <span class="op">=</span> f <span class="op">/</span> f[<span class="dv">0</span>]       <span class="co"># normalize so alpha_bar[0] = 1</span></span>
+<span id="cb3-16"><a href=""></a>ab_cos <span class="op">=</span> ab_cos[<span class="dv">1</span>:]      <span class="co"># now length T, for t = 1..T</span></span>
+<span id="cb3-17"><a href=""></a><span class="co"># clip betas to prevent singularities</span></span>
+<span id="cb3-18"><a href=""></a>betas_cos <span class="op">=</span> <span class="dv">1</span> <span class="op">-</span> ab_cos <span class="op">/</span> np.concatenate([[<span class="fl">1.0</span>], ab_cos[:<span class="op">-</span><span class="dv">1</span>]])</span>
+<span id="cb3-19"><a href=""></a>betas_cos <span class="op">=</span> np.clip(betas_cos, <span class="dv">0</span>, <span class="fl">0.999</span>)</span>
+<span id="cb3-20"><a href=""></a>ab_cos <span class="op">=</span> np.cumprod(<span class="dv">1</span> <span class="op">-</span> betas_cos)</span>
+<span id="cb3-21"><a href=""></a></span>
+<span id="cb3-22"><a href=""></a><span class="co"># ── Compute SNR ──</span></span>
+<span id="cb3-23"><a href=""></a>snr_lin <span class="op">=</span> ab_lin <span class="op">/</span> (<span class="dv">1</span> <span class="op">-</span> ab_lin <span class="op">+</span> <span class="fl">1e-12</span>)</span>
+<span id="cb3-24"><a href=""></a>snr_cos <span class="op">=</span> ab_cos <span class="op">/</span> (<span class="dv">1</span> <span class="op">-</span> ab_cos <span class="op">+</span> <span class="fl">1e-12</span>)</span>
+<span id="cb3-25"><a href=""></a></span>
+<span id="cb3-26"><a href=""></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="fl">4.5</span>))</span>
+<span id="cb3-27"><a href=""></a></span>
+<span id="cb3-28"><a href=""></a><span class="co"># Plot 1: alpha_bar</span></span>
+<span id="cb3-29"><a href=""></a>axes[<span class="dv">0</span>].plot(ab_lin, label<span class="op">=</span><span class="st">"Linear"</span>, linewidth<span class="op">=</span><span class="dv">2</span>, color<span class="op">=</span><span class="st">"#ef4444"</span>)</span>
+<span id="cb3-30"><a href=""></a>axes[<span class="dv">0</span>].plot(ab_cos, label<span class="op">=</span><span class="st">"Cosine"</span>, linewidth<span class="op">=</span><span class="dv">2</span>, color<span class="op">=</span><span class="st">"#3b82f6"</span>)</span>
+<span id="cb3-31"><a href=""></a>axes[<span class="dv">0</span>].set_xlabel(<span class="st">"Timestep t"</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb3-32"><a href=""></a>axes[<span class="dv">0</span>].set_ylabel(<span class="st">"$</span><span class="ch">\\</span><span class="st">bar{</span><span class="ch">\\</span><span class="st">alpha}_t$ (signal fraction)"</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb3-33"><a href=""></a>axes[<span class="dv">0</span>].set_title(<span class="st">"How much signal remains?"</span>, fontsize<span class="op">=</span><span class="dv">13</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb3-34"><a href=""></a>axes[<span class="dv">0</span>].legend(fontsize<span class="op">=</span><span class="dv">11</span>)</span>
+<span id="cb3-35"><a href=""></a>axes[<span class="dv">0</span>].grid(alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb3-36"><a href=""></a></span>
+<span id="cb3-37"><a href=""></a><span class="co"># Plot 2: SNR (log scale)</span></span>
+<span id="cb3-38"><a href=""></a>axes[<span class="dv">1</span>].plot(snr_lin, label<span class="op">=</span><span class="st">"Linear"</span>, linewidth<span class="op">=</span><span class="dv">2</span>, color<span class="op">=</span><span class="st">"#ef4444"</span>)</span>
+<span id="cb3-39"><a href=""></a>axes[<span class="dv">1</span>].plot(snr_cos, label<span class="op">=</span><span class="st">"Cosine"</span>, linewidth<span class="op">=</span><span class="dv">2</span>, color<span class="op">=</span><span class="st">"#3b82f6"</span>)</span>
+<span id="cb3-40"><a href=""></a>axes[<span class="dv">1</span>].set_yscale(<span class="st">"log"</span>)</span>
+<span id="cb3-41"><a href=""></a>axes[<span class="dv">1</span>].set_xlabel(<span class="st">"Timestep t"</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb3-42"><a href=""></a>axes[<span class="dv">1</span>].set_ylabel(<span class="st">"SNR(t)  [log scale]"</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb3-43"><a href=""></a>axes[<span class="dv">1</span>].set_title(<span class="st">"Signal-to-Noise Ratio"</span>, fontsize<span class="op">=</span><span class="dv">13</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb3-44"><a href=""></a>axes[<span class="dv">1</span>].legend(fontsize<span class="op">=</span><span class="dv">11</span>)</span>
+<span id="cb3-45"><a href=""></a>axes[<span class="dv">1</span>].grid(alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb3-46"><a href=""></a></span>
+<span id="cb3-47"><a href=""></a>plt.tight_layout()</span>
+<span id="cb3-48"><a href=""></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-snr-comparison" class="quarto-float quarto-figure quarto-figure-center">
+<figure class="quarto-float quarto-float-fig">
+<div aria-describedby="fig-snr-comparison-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img data-src="index_files/figure-revealjs/fig-snr-comparison-output-1.png" width="1333" height="422">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-snr-comparison-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Signal-to-Noise Ratio over time: linear schedule drops too fast
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “This is a key improvement from Nichol and Dhariwal. The LEFT plot shows alpha-bar — how much original signal remains — over time. The RED linear schedule drops to near zero by step 750, meaning the last quarter of the process is basically wasted — it’s just shuffling pure noise around. The BLUE cosine schedule decreases much more gradually, keeping useful signal throughout the entire process. The RIGHT plot shows the same thing as SNR on a log scale. The cosine schedule provides a smoother transition, which leads to better image quality, especially for small images.”</p>
+<p><strong>WHAT THIS MEANS:</strong> - SNR = signal / noise = <span class="math inline">\(\bar{\alpha}_t / (1-\bar{\alpha}_t)\)</span> - High SNR = mostly signal, low SNR = mostly noise - Linear schedule: last ~25% of timesteps are wasted (already pure noise) - Cosine schedule: useful denoising work happening across all timesteps - This is from Nichol &amp; Dhariwal 2021, Table 2: cosine + L_hybrid gives best FID on CIFAR-10</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="visual-comparison-linear-vs-cosine-at-same-timesteps" class="slide level2 center">
+<h2>Visual Comparison: Linear vs Cosine at Same Timesteps</h2>
+<div id="cell-fig-schedule-visual" class="cell" data-execution_count="3">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href=""></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb4-2"><a href=""></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb4-3"><a href=""></a></span>
+<span id="cb4-4"><a href=""></a>np.random.seed(<span class="dv">123</span>)</span>
+<span id="cb4-5"><a href=""></a><span class="co"># Reuse the checkerboard</span></span>
+<span id="cb4-6"><a href=""></a>block <span class="op">=</span> <span class="dv">16</span></span>
+<span id="cb4-7"><a href=""></a>pattern <span class="op">=</span> np.zeros((<span class="dv">8</span><span class="op">*</span>block, <span class="dv">8</span><span class="op">*</span>block, <span class="dv">3</span>), dtype<span class="op">=</span>np.float32)</span>
+<span id="cb4-8"><a href=""></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">8</span>):</span>
+<span id="cb4-9"><a href=""></a>    <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">8</span>):</span>
+<span id="cb4-10"><a href=""></a>        <span class="cf">if</span> (i <span class="op">+</span> j) <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb4-11"><a href=""></a>            pattern[i<span class="op">*</span>block:(i<span class="op">+</span><span class="dv">1</span>)<span class="op">*</span>block, j<span class="op">*</span>block:(j<span class="op">+</span><span class="dv">1</span>)<span class="op">*</span>block] <span class="op">=</span> [<span class="fl">0.9</span>, <span class="fl">0.3</span>, <span class="fl">0.2</span>]</span>
+<span id="cb4-12"><a href=""></a>        <span class="cf">else</span>:</span>
+<span id="cb4-13"><a href=""></a>            pattern[i<span class="op">*</span>block:(i<span class="op">+</span><span class="dv">1</span>)<span class="op">*</span>block, j<span class="op">*</span>block:(j<span class="op">+</span><span class="dv">1</span>)<span class="op">*</span>block] <span class="op">=</span> [<span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">0.9</span>]</span>
+<span id="cb4-14"><a href=""></a>x0 <span class="op">=</span> pattern</span>
+<span id="cb4-15"><a href=""></a></span>
+<span id="cb4-16"><a href=""></a>T <span class="op">=</span> <span class="dv">1000</span></span>
+<span id="cb4-17"><a href=""></a><span class="co"># Linear</span></span>
+<span id="cb4-18"><a href=""></a>betas_lin <span class="op">=</span> np.linspace(<span class="fl">1e-4</span>, <span class="fl">2e-2</span>, T)</span>
+<span id="cb4-19"><a href=""></a>ab_lin <span class="op">=</span> np.cumprod(<span class="dv">1</span> <span class="op">-</span> betas_lin)</span>
+<span id="cb4-20"><a href=""></a></span>
+<span id="cb4-21"><a href=""></a><span class="co"># Cosine</span></span>
+<span id="cb4-22"><a href=""></a>s <span class="op">=</span> <span class="fl">0.008</span></span>
+<span id="cb4-23"><a href=""></a>steps <span class="op">=</span> np.arange(T <span class="op">+</span> <span class="dv">1</span>, dtype<span class="op">=</span>np.float64)</span>
+<span id="cb4-24"><a href=""></a>f_cos <span class="op">=</span> np.cos(((steps <span class="op">/</span> T) <span class="op">+</span> s) <span class="op">/</span> (<span class="dv">1</span> <span class="op">+</span> s) <span class="op">*</span> np.pi <span class="op">/</span> <span class="dv">2</span>) <span class="op">**</span> <span class="dv">2</span></span>
+<span id="cb4-25"><a href=""></a>ab_cos_raw <span class="op">=</span> f_cos <span class="op">/</span> f_cos[<span class="dv">0</span>]</span>
+<span id="cb4-26"><a href=""></a>ab_cos <span class="op">=</span> ab_cos_raw[<span class="dv">1</span>:]</span>
+<span id="cb4-27"><a href=""></a>betas_c <span class="op">=</span> <span class="dv">1</span> <span class="op">-</span> ab_cos <span class="op">/</span> np.concatenate([[<span class="fl">1.0</span>], ab_cos[:<span class="op">-</span><span class="dv">1</span>]])</span>
+<span id="cb4-28"><a href=""></a>betas_c <span class="op">=</span> np.clip(betas_c, <span class="dv">0</span>, <span class="fl">0.999</span>)</span>
+<span id="cb4-29"><a href=""></a>ab_cos <span class="op">=</span> np.cumprod(<span class="dv">1</span> <span class="op">-</span> betas_c)</span>
+<span id="cb4-30"><a href=""></a></span>
+<span id="cb4-31"><a href=""></a><span class="kw">def</span> q_sample_with_schedule(x0, t, ab):</span>
+<span id="cb4-32"><a href=""></a>    eps <span class="op">=</span> np.random.randn(<span class="op">*</span>x0.shape)</span>
+<span id="cb4-33"><a href=""></a>    <span class="cf">return</span> (np.sqrt(ab[t]) <span class="op">*</span> x0 <span class="op">+</span> np.sqrt(<span class="dv">1</span> <span class="op">-</span> ab[t]) <span class="op">*</span> eps).clip(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb4-34"><a href=""></a></span>
+<span id="cb4-35"><a href=""></a>compare_t <span class="op">=</span> [<span class="dv">200</span>, <span class="dv">400</span>, <span class="dv">600</span>, <span class="dv">800</span>]</span>
+<span id="cb4-36"><a href=""></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="bu">len</span>(compare_t), figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">5</span>))</span>
+<span id="cb4-37"><a href=""></a></span>
+<span id="cb4-38"><a href=""></a><span class="cf">for</span> col, t <span class="kw">in</span> <span class="bu">enumerate</span>(compare_t):</span>
+<span id="cb4-39"><a href=""></a>    np.random.seed(col)  <span class="co"># same noise for fair comparison</span></span>
+<span id="cb4-40"><a href=""></a>    img_lin <span class="op">=</span> q_sample_with_schedule(x0, t, ab_lin)</span>
+<span id="cb4-41"><a href=""></a>    np.random.seed(col)</span>
+<span id="cb4-42"><a href=""></a>    img_cos <span class="op">=</span> q_sample_with_schedule(x0, t, ab_cos)</span>
+<span id="cb4-43"><a href=""></a></span>
+<span id="cb4-44"><a href=""></a>    axes[<span class="dv">0</span>, col].imshow(img_lin)</span>
+<span id="cb4-45"><a href=""></a>    axes[<span class="dv">0</span>, col].set_title(<span class="ss">f"t=</span><span class="sc">{</span>t<span class="sc">}</span><span class="ss">"</span>, fontsize<span class="op">=</span><span class="dv">11</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb4-46"><a href=""></a>    axes[<span class="dv">0</span>, col].axis(<span class="st">"off"</span>)</span>
+<span id="cb4-47"><a href=""></a></span>
+<span id="cb4-48"><a href=""></a>    axes[<span class="dv">1</span>, col].imshow(img_cos)</span>
+<span id="cb4-49"><a href=""></a>    axes[<span class="dv">1</span>, col].set_title(<span class="ss">f"t=</span><span class="sc">{</span>t<span class="sc">}</span><span class="ss">"</span>, fontsize<span class="op">=</span><span class="dv">11</span>)</span>
+<span id="cb4-50"><a href=""></a>    axes[<span class="dv">1</span>, col].axis(<span class="st">"off"</span>)</span>
+<span id="cb4-51"><a href=""></a></span>
+<span id="cb4-52"><a href=""></a>axes[<span class="dv">0</span>, <span class="dv">0</span>].set_ylabel(<span class="st">"Linear"</span>, fontsize<span class="op">=</span><span class="dv">12</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>, rotation<span class="op">=</span><span class="dv">0</span>, labelpad<span class="op">=</span><span class="dv">50</span>)</span>
+<span id="cb4-53"><a href=""></a>axes[<span class="dv">1</span>, <span class="dv">0</span>].set_ylabel(<span class="st">"Cosine"</span>, fontsize<span class="op">=</span><span class="dv">12</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>, rotation<span class="op">=</span><span class="dv">0</span>, labelpad<span class="op">=</span><span class="dv">50</span>)</span>
+<span id="cb4-54"><a href=""></a>fig.suptitle(<span class="st">"Same noise realization, different schedules"</span>, fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>, y<span class="op">=</span><span class="fl">1.02</span>)</span>
+<span id="cb4-55"><a href=""></a>plt.tight_layout()</span>
+<span id="cb4-56"><a href=""></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-schedule-visual" class="quarto-float quarto-figure quarto-figure-center">
+<figure class="quarto-float quarto-float-fig">
+<div aria-describedby="fig-schedule-visual-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img data-src="index_files/figure-revealjs/fig-schedule-visual-output-1.png" width="1154" height="494">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-schedule-visual-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Same image, same timesteps — cosine preserves structure longer
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Here’s the same image with the same random noise, but with different schedules. Look at t=400: the linear schedule has already destroyed most of the structure, while the cosine schedule still shows clear checkerboard patterns. By t=600, linear is basically noise while cosine still has visible structure. This means cosine gives the network more ‘useful work’ to do at each step.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+<!-- ============================================================
+     SECTION 4: KEY IMPROVEMENTS (Nichol & Dhariwal 2021)
+     ============================================================ -->
+</section></section>
+<section>
+<section id="key-improvements" class="title-slide slide level1 center" data-background-color="#1a1a2e">
+<h1>Key Improvements</h1>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Now let’s talk about the improvements that Nichol and Dhariwal made in 2021.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="improvement-1-learning-the-variance" class="slide level2 center">
+<h2>Improvement 1: Learning the Variance</h2>
+<p><strong>Ho et al.&nbsp;(2020):</strong> Fixed variance <span class="math inline">\(\Sigma_\theta = \sigma_t^2 I\)</span> (not learned)</p>
+<div class="fragment">
+<p><strong>Nichol &amp; Dhariwal (2021):</strong> Learn it! Network outputs a value <span class="math inline">\(v\)</span> that interpolates:</p>
+<p><span class="math display">\[\Sigma_\theta(x_t, t) = \exp\!\left(v \log \beta_t + (1-v) \log \tilde{\beta}_t\right)\]</span></p>
+</div>
+<div class="fragment">
+<p>where <span class="math inline">\(\tilde{\beta}_t = \frac{1-\bar{\alpha}_{t-1}}{1-\bar{\alpha}_t}\beta_t\)</span> is the posterior variance.</p>
+</div>
+<div class="fragment">
+<p><strong>Training:</strong> Use a hybrid loss: <span class="math inline">\(\mathcal{L}_{\text{hybrid}} = \mathcal{L}_{\text{simple}} + \lambda \cdot \mathcal{L}_{\text{vlb}}\)</span> with <span class="math inline">\(\lambda = 0.001\)</span></p>
+<ul>
+<li><span class="math inline">\(\mathcal{L}_{\text{simple}}\)</span> drives the mean (sample quality)</li>
+<li><span class="math inline">\(\mathcal{L}_{\text{vlb}}\)</span> drives the variance (log-likelihood)</li>
+</ul>
+<p><span class="citation" data-cites="nichol2021improved">(<a href="#/references" role="doc-biblioref" onclick="">Nichol and Dhariwal 2021</a>)</span></p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “The first improvement: instead of fixing the variance, learn it. The network outputs a value v that interpolates between two known bounds — beta_t and the posterior variance beta-tilde_t. They use a hybrid loss that combines the simple loss with a small weight on the full variational bound. This is important because it enables the next big benefit…”</p>
+<p><strong>WHAT THIS MEANS:</strong> <span class="math inline">\(\tilde{\beta}_t\)</span> is optimal if data were a single point; <span class="math inline">\(\beta_t\)</span> is optimal for pure Gaussian data. Real data is somewhere in between, so we let the network learn where.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="improvement-2-fast-sampling-with-learned-variance" class="slide level2 center">
+<h2>Improvement 2: Fast Sampling with Learned Variance</h2>
+<p>With learned variance, you can use <strong>fewer sampling steps</strong> with minimal quality loss.</p>
+<div class="fragment">
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Steps</th>
+<th>Method</th>
+<th>FID (lower = better)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>4000</td>
+<td>Full DDPM</td>
+<td>~11</td>
+</tr>
+<tr class="even">
+<td>100</td>
+<td><span class="math inline">\(\mathcal{L}_{\text{simple}}\)</span> (fixed <span class="math inline">\(\sigma\)</span>)</td>
+<td>~20-25</td>
+</tr>
+<tr class="odd">
+<td>100</td>
+<td><span class="math inline">\(\mathcal{L}_{\text{hybrid}}\)</span> (learned <span class="math inline">\(\Sigma\)</span>)</td>
+<td>~15</td>
+</tr>
+<tr class="even">
+<td>25</td>
+<td><span class="math inline">\(\mathcal{L}_{\text{hybrid}}\)</span> (learned <span class="math inline">\(\Sigma\)</span>)</td>
+<td>~20</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="fragment">
+<p><strong>Going from minutes → seconds per image!</strong> But can we go even faster?</p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Here’s why learning the variance matters in practice. With a fixed variance, cutting from 4000 steps to 100 badly hurts quality. But with learned variance, 100 steps gives reasonable quality — and even 25 steps is usable. This takes generation from minutes down to seconds. But can we push it further? Can we generate in just 1 or 2 steps?”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="improvement-3-scaling-log-likelihood-results" class="slide level2 center">
+<h2>Improvement 3: Scaling &amp; Log-Likelihood Results</h2>
+<p>Nichol &amp; Dhariwal showed DDPMs achieve <strong>competitive log-likelihoods</strong>:</p>
+<div class="fragment">
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Model</th>
+<th>NLL (bits/dim) ↓</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Sparse Transformer</td>
+<td>2.80</td>
+</tr>
+<tr class="even">
+<td>Very Deep VAE</td>
+<td>2.87</td>
+</tr>
+<tr class="odd">
+<td>PixelSNAIL</td>
+<td>2.85</td>
+</tr>
+<tr class="even">
+<td><strong>Improved DDPM</strong></td>
+<td><strong>2.94</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="fragment">
+<p>Plus: DDPMs have <strong>much higher recall</strong> than GANs (better mode coverage).</p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “They also showed DDPMs can match autoregressive models on log-likelihood — previously thought impossible for diffusion models. And importantly, DDPMs achieve much higher recall than GANs, meaning they cover the full distribution rather than just generating a few easy modes. This is measured by precision/recall metrics.”</p>
+<p><strong>WHAT THIS MEANS:</strong> Recall = what fraction of real images are ‘covered’ by the generative model. GANs have low recall (mode collapse). DDPMs have high recall (diverse samples).</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+<!-- ============================================================
+     SECTION 5: APPLICATIONS & RESULTS
+     ============================================================ -->
+</div>
+</section></section>
+<section>
+<section id="applications-real-world-impact" class="title-slide slide level1 center" data-background-color="#1a1a2e">
+<h1>Applications &amp; Real-World Impact</h1>
+
+</section>
+<section id="original-ddpm-results-ho-et-al.-2020" class="slide level2 center">
+<h2>Original DDPM Results (Ho et al.&nbsp;2020)</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
+<p><strong>CIFAR-10 (32×32)</strong></p>
+<ul>
+<li>FID = <strong>3.17</strong> (state-of-the-art at time)</li>
+<li>IS = 9.46</li>
+<li>Beat all previous non-GAN methods</li>
+</ul>
+<p><strong>CelebA-HQ (256×256)</strong></p>
+<ul>
+<li>High-quality face generation</li>
+<li>Quality comparable to ProgressiveGAN</li>
+</ul>
+</div><div class="column" style="width:50%;">
+<p><strong>Key properties demonstrated:</strong></p>
+<ul>
+<li>Progressive generation (coarse → fine)</li>
+<li>Smooth latent interpolation</li>
+<li>Lossy compression interpretation</li>
+<li>Connection to score matching</li>
+</ul>
+<p><em>Figures: see Ho et al.&nbsp;2020, Figs. 1, 6-8</em></p>
+</div></div>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “The original DDPM paper demonstrated impressive results. On CIFAR-10, they achieved an FID of 3.17 — beating all previous non-adversarial methods. They also showed beautiful face generation on CelebA-HQ at 256x256 resolution. Beyond raw quality, they demonstrated cool properties: progressive generation where structure emerges gradually from noise, smooth interpolation in latent space, and a connection to lossy compression where most bits describe imperceptible details.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="beyond-images-where-diffusion-models-are-used-today" class="slide level2 center">
+<h2>Beyond Images: Where Diffusion Models Are Used Today</h2>
+<div class="fragment">
+<p>🎵 <strong>Audio:</strong> WaveGrad, DiffWave — high-fidelity speech synthesis <span class="citation" data-cites="chen2020wavegrad">(<a href="#/references" role="doc-biblioref" onclick="">Chen et al. 2020</a>)</span></p>
+</div>
+<div class="fragment">
+<p>🧬 <strong>Protein Design:</strong> RFdiffusion — generating new protein structures for drug discovery <span class="citation" data-cites="watson2023rfdiffusion">(<a href="#/references" role="doc-biblioref" onclick="">Watson et al. 2023</a>)</span></p>
+</div>
+<div class="fragment">
+<p>🌤️ <strong>Weather Forecasting:</strong> GenCast by DeepMind — probabilistic weather ensembles <span class="citation" data-cites="price2024gencast">(<a href="#/references" role="doc-biblioref" onclick="">Price et al. 2024</a>)</span></p>
+</div>
+<div class="fragment">
+<p>🎬 <strong>Video:</strong> Generating temporally coherent video sequences</p>
+</div>
+<div class="fragment">
+<p>🖼️ <strong>Text-to-Image:</strong> DALL·E 2, Stable Diffusion, Imagen — all built on diffusion <span class="citation" data-cites="rombach2022latentdiffusion">(<a href="#/references" role="doc-biblioref" onclick="">Rombach et al. 2022</a>)</span></p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Diffusion models have exploded far beyond academic image benchmarks. They’re used in audio generation — WaveGrad generates speech from spectrograms. In biology, RFdiffusion uses diffusion to design entirely new protein structures. Google DeepMind’s GenCast uses diffusion for weather forecasting that beats traditional numerical methods. And of course, all the text-to-image systems you’ve heard of — DALL-E, Stable Diffusion, Midjourney — are built on diffusion models. The core math we showed today is the foundation for all of these.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+<!-- ============================================================
+     SECTION 6: THE SPEED PROBLEM & CONSISTENCY MODELS
+     ============================================================ -->
+</div>
+</section></section>
+<section>
+<section id="the-speed-problem-consistency-models" class="title-slide slide level1 center" data-background-color="#1a1a2e">
+<h1>The Speed Problem &amp; Consistency Models</h1>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Now we get to the main limitation and an exciting recent solution.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="the-speed-problem" class="slide level2 center">
+<h2>The Speed Problem</h2>
+<p>DDPMs require <strong>hundreds to thousands</strong> of network evaluations per sample.</p>
+<div class="fragment">
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Steps Needed</th>
+<th>Time per Image</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>DDPM (Ho 2020)</td>
+<td>1000</td>
+<td>~minutes</td>
+</tr>
+<tr class="even">
+<td>Improved DDPM (Nichol 2021)</td>
+<td>100</td>
+<td>~seconds</td>
+</tr>
+<tr class="odd">
+<td>DDIM (Song 2020)</td>
+<td>50</td>
+<td>~seconds</td>
+</tr>
+<tr class="even">
+<td>DPM-Solver</td>
+<td>10-20</td>
+<td>sub-second</td>
+</tr>
+<tr class="odd">
+<td><strong>Consistency Models</strong></td>
+<td><strong>1-2</strong></td>
+<td><strong>milliseconds</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="fragment">
+<p><strong>Question:</strong> Can we map noise → data in a <strong>single step</strong> without losing quality?</p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “This table shows the progression. Original DDPM: 1000 steps, takes minutes. Various improvements got it down to tens of steps. But consistency models — introduced by Song et al.&nbsp;in 2023 — can generate in just 1 or 2 steps. That’s a 1000x reduction in compute at sampling time.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="consistency-models-the-key-idea" class="slide level2 center">
+<h2>Consistency Models: The Key Idea</h2>
+<p><strong>Diffusion models</strong> define smooth trajectories from data → noise (via the Probability Flow ODE).</p>
+<div class="fragment">
+<p><strong>Consistency models</strong> learn to map <strong>any point on the trajectory directly to its origin</strong>:</p>
+<div class="key-eq">
+<p><span class="math display">\[f_\theta(x_t, t) = x_0 \quad \text{for any } t \in [\epsilon, T]\]</span></p>
+</div>
+</div>
+<div class="fragment">
+<p><strong>Self-consistency property:</strong> All points on the same trajectory give the same output:</p>
+<p><span class="math display">\[f_\theta(x_t, t) = f_\theta(x_{t'}, t') \quad \text{if } x_t, x_{t'} \text{ are on the same ODE trajectory}\]</span></p>
+<p><span class="citation" data-cites="song2023consistency">(<a href="#/references" role="doc-biblioref" onclick="">Song et al. 2023</a>)</span></p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Here’s the brilliant idea from Song et al.&nbsp;Diffusion models define smooth paths — ODE trajectories — from data to noise. Instead of walking along this path step by step, what if we trained a network to jump directly to the endpoint? Given any noisy image x_t at any noise level t, the consistency model f_theta outputs the clean image x_0 directly. The key property they enforce is self-consistency: two points on the same trajectory must map to the same clean image.”</p>
+<p><strong>WHAT THIS MEANS:</strong> The Probability Flow ODE comes from the SDE formulation of diffusion. It says: there exists a deterministic ODE whose marginals at each time t match the diffusion process. Each ODE trajectory connects one clean image to one noise vector uniquely.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="two-ways-to-train-consistency-models" class="slide level2 center">
+<h2>Two Ways to Train Consistency Models</h2>
+<div class="fragment">
+<p><strong>1. Consistency Distillation (CD)</strong> — uses a pre-trained diffusion model</p>
+<ul>
+<li>Take adjacent points on ODE trajectory (computed via the pre-trained model)</li>
+<li>Train: <span class="math inline">\(f_\theta(x_{t_{n+1}}, t_{n+1}) \approx f_{\theta^-}(x_{t_n}, t_n)\)</span></li>
+<li>Best results: <strong>FID 3.55</strong> on CIFAR-10 with <strong>1 step</strong>!</li>
+</ul>
+</div>
+<div class="fragment">
+<p><strong>2. Consistency Training (CT)</strong> — standalone, no pre-trained model</p>
+<ul>
+<li>Uses the unbiased score estimator: <span class="math inline">\(\nabla \log p_t(x_t) \approx -(x_t - x) / t^2\)</span></li>
+<li>Makes consistency models an <strong>independent</strong> generative model family</li>
+<li>FID 8.70 on CIFAR-10 (1 step) — still beats VAEs and flows</li>
+</ul>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “There are two training modes. Consistency Distillation starts with an already-trained diffusion model and distills its knowledge into a one-step generator. This gives the best results — 3.55 FID with just one step on CIFAR-10. Consistency Training doesn’t need a pre-trained model at all — it trains from scratch using an unbiased score estimator. The quality isn’t as good, but it makes consistency models a fully independent class of generative models.”</p>
+<p><strong>WHAT THIS MEANS:</strong> Distillation = teacher-student paradigm. The expensive diffusion model is the ‘teacher’ and the fast consistency model is the ‘student’ that learns to shortcut the process.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="consistency-model-results" class="slide level2 center">
+<h2>Consistency Model Results</h2>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Dataset</th>
+<th>Method</th>
+<th>Steps</th>
+<th>FID ↓</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>CIFAR-10</td>
+<td>DDPM (Ho 2020)</td>
+<td>1000</td>
+<td>3.17</td>
+</tr>
+<tr class="even">
+<td>CIFAR-10</td>
+<td>EDM (Karras 2022)</td>
+<td>35</td>
+<td>2.04</td>
+</tr>
+<tr class="odd">
+<td>CIFAR-10</td>
+<td><strong>CD (Song 2023)</strong></td>
+<td><strong>1</strong></td>
+<td><strong>3.55</strong></td>
+</tr>
+<tr class="even">
+<td>CIFAR-10</td>
+<td><strong>CD (Song 2023)</strong></td>
+<td><strong>2</strong></td>
+<td><strong>2.93</strong></td>
+</tr>
+<tr class="odd">
+<td>ImageNet 64</td>
+<td><strong>CD (Song 2023)</strong></td>
+<td><strong>1</strong></td>
+<td><strong>6.20</strong></td>
+</tr>
+<tr class="even">
+<td>ImageNet 64</td>
+<td><strong>CD (Song 2023)</strong></td>
+<td><strong>2</strong></td>
+<td><strong>4.70</strong></td>
+</tr>
+</tbody>
+</table>
+<div class="fragment">
+<p><strong>One-step</strong> consistency distillation nearly matches <strong>1000-step</strong> DDPM!</p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Look at these numbers. The original DDPM needed 1000 steps to get FID 3.17 on CIFAR-10. Consistency distillation gets 3.55 with just ONE step, and 2.93 with TWO steps — actually beating the original DDPM. On ImageNet 64x64, single-step gets 6.20 FID. This is a massive practical improvement.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="zero-shot-editing-no-extra-training-needed" class="slide level2 center">
+<h2>Zero-Shot Editing: No Extra Training Needed</h2>
+<p>Consistency models can perform image editing tasks <strong>they were never trained for</strong>:</p>
+<div class="fragment">
+<div class="columns">
+<div class="column" style="width:50%;">
+<ul>
+<li><strong>Colorization:</strong> grayscale → color</li>
+<li><strong>Super-resolution:</strong> 32×32 → 256×256</li>
+<li><strong>Inpainting:</strong> fill missing regions</li>
+</ul>
+</div><div class="column" style="width:50%;">
+<ul>
+<li><strong>Stroke-guided generation:</strong> rough sketch → image</li>
+<li><strong>Denoising:</strong> clean up noisy images</li>
+<li><strong>Interpolation:</strong> blend between samples</li>
+</ul>
+</div></div>
+</div>
+<div class="fragment">
+<p>All done by modifying the multistep sampling algorithm — not retraining!</p>
+<p><em>See Song et al.&nbsp;2023, Figure 6 for visual examples.</em></p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Perhaps the coolest thing about consistency models is zero-shot editing. A model trained ONLY to generate bedrooms can also colorize grayscale images, upscale low-resolution images, fill in missing patches, and even turn rough sketches into realistic images — all without any additional training. This works because the model has learned the underlying data distribution so well that it can solve these inverse problems by modifying the sampling procedure.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+<!-- ============================================================
+     SECTION 7: LIMITATIONS & FUTURE WORK
+     ============================================================ -->
+</div>
+</section></section>
+<section>
+<section id="limitations-future-directions" class="title-slide slide level1 center" data-background-color="#1a1a2e">
+<h1>Limitations &amp; Future Directions</h1>
+
+</section>
+<section id="current-limitations" class="slide level2 center">
+<h2>Current Limitations</h2>
+<div class="fragment">
+<p><strong>Sampling speed</strong> — Even with consistency models, quality vs.&nbsp;speed tradeoff exists</p>
+</div>
+<div class="fragment">
+<p><strong>Training cost</strong> — Still requires many GPUs and days/weeks of training</p>
+</div>
+<div class="fragment">
+<p><strong>Memory</strong> — Full-resolution latent variables at each step (→ Latent Diffusion helps)</p>
+</div>
+<div class="fragment">
+<p><strong>Theory gaps</strong> — Why does <span class="math inline">\(\mathcal{L}_{\text{simple}}\)</span> outperform the true variational bound?</p>
+</div>
+<div class="fragment">
+<p><strong>Evaluation</strong> — FID/IS are imperfect metrics for generative quality</p>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Despite the impressive results, there are clear limitations. Sampling speed has improved dramatically but training is still expensive. Memory usage is high — which motivated latent diffusion models like Stable Diffusion that operate in a compressed space. Theoretically, we still don’t fully understand why the simplified loss works better than the full variational bound. And our evaluation metrics like FID are known to be imperfect.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</div>
+</section>
+<section id="future-directions" class="slide level2 center">
+<h2>Future Directions</h2>
+<div class="fragment">
+<ul>
+<li><strong>Even faster sampling:</strong> Improved distillation, better ODE solvers</li>
+<li><strong>Latent diffusion:</strong> Operating in compressed space (Stable Diffusion approach)</li>
+<li><strong>Better conditioning:</strong> Text, audio, 3D, multi-modal inputs</li>
+<li><strong>Continuous-time formulation:</strong> Score-based SDEs — elegant unified theory <span class="citation" data-cites="song2021scorebased">(<a href="#/references" role="doc-biblioref" onclick="">Song et al. 2021</a>)</span></li>
+<li><strong>New domains:</strong> Scientific discovery, drug design, climate modeling</li>
+<li><strong>Theoretical understanding:</strong> Convergence guarantees, loss landscape analysis</li>
+</ul>
+<aside class="notes">
+<p><strong>WHAT TO SAY:</strong> “Looking ahead, research continues on faster sampling, better architectures, and new applications. The SDE formulation by Song et al.&nbsp;2021 provides a beautiful unified view. New domains keep emerging — protein design, weather, materials science. And there’s important theoretical work to be done understanding why these models work so well.”</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+<!-- ============================================================
+     SECTION 8: SUMMARY & REFERENCES
+     ============================================================ -->
+</div>
+</section></section>
+<section>
+<section id="summary" class="title-slide slide level1 center" data-background-color="#1a1a2e">
+<h1>Summary</h1>
+
+</section>
+<section id="what-we-covered" class="slide level2 center">
+<h2>What We Covered</h2>
+<table class="caption-top">
+<colgroup>
+<col style="width: 35%">
+<col style="width: 65%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Topic</th>
+<th>Key Takeaway</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Forward Process</strong></td>
+<td>Destroy data with known Gaussian noise; <span class="math inline">\(x_t = \sqrt{\bar{\alpha}_t}x_0 + \sqrt{1-\bar{\alpha}_t}\varepsilon\)</span></td>
+</tr>
+<tr class="even">
+<td><strong>Reverse Process</strong></td>
+<td>Neural net learns to denoise; predicts noise <span class="math inline">\(\varepsilon_\theta(x_t, t)\)</span></td>
+</tr>
+<tr class="odd">
+<td><strong>Training</strong></td>
+<td>Simple MSE loss: <span class="math inline">\(\|\varepsilon - \varepsilon_\theta\|^2\)</span></td>
+</tr>
+<tr class="even">
+<td><strong>Connection to Stats</strong></td>
+<td>Equivalent to denoising score matching; learns <span class="math inline">\(\nabla \log p(x)\)</span></td>
+</tr>
+<tr class="odd">
+<td><strong>Improvements</strong></td>
+<td>Learned variance + cosine schedule → better quality &amp; faster sampling</td>
+</tr>
+<tr class="even">
+<td><strong>Consistency Models</strong></td>
+<td>Map noise → data in 1 step; zero-shot editing for free</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="references" class="slide level2 smaller scrollable">
+<h2>References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-chen2020wavegrad" class="csl-entry" role="listitem">
+Chen, Nanxin, Yu Zhang, Heiga Zen, Ron J. Weiss, Mohammad Norouzi, and William Chan. 2020. <span>“WaveGrad: Estimating Gradients for Waveform Generation.”</span> <em>arXiv Preprint arXiv:2009.00713</em>.
+</div>
+<div id="ref-ho2020ddpm" class="csl-entry" role="listitem">
+Ho, Jonathan, Ajay Jain, and Pieter Abbeel. 2020. <span>“Denoising Diffusion Probabilistic Models.”</span> In <em>Advances in Neural Information Processing Systems (NeurIPS)</em>.
+</div>
+<div id="ref-nichol2021improved" class="csl-entry" role="listitem">
+Nichol, Alex, and Prafulla Dhariwal. 2021. <span>“Improved Denoising Diffusion Probabilistic Models.”</span> In <em>Proceedings of the 38th International Conference on Machine Learning (ICML)</em>.
+</div>
+<div id="ref-price2024gencast" class="csl-entry" role="listitem">
+Price, Ilan et al. 2024. <span>“Probabilistic Weather Forecasting with Machine Learning.”</span> <em>Nature</em>.
+</div>
+<div id="ref-rombach2022latentdiffusion" class="csl-entry" role="listitem">
+Rombach, Robin, Andreas Blattmann, Dominik Lorenz, Patrick Esser, and Björn Ommer. 2022. <span>“High-Resolution Image Synthesis with Latent Diffusion Models.”</span> <em>arXiv Preprint arXiv:2112.10752</em>.
+</div>
+<div id="ref-sohldickstein2015deep" class="csl-entry" role="listitem">
+Sohl-Dickstein, Jascha, Eric A. Weiss, Niru Maheswaranathan, and Surya Ganguli. 2015. <span>“Deep Unsupervised Learning Using Nonequilibrium Thermodynamics.”</span> <em>arXiv Preprint arXiv:1503.03585</em>.
+</div>
+<div id="ref-song2023consistency" class="csl-entry" role="listitem">
+Song, Yang, Prafulla Dhariwal, Mark Chen, and Ilya Sutskever. 2023. <span>“Consistency Models.”</span> In <em>Proceedings of the 40th International Conference on Machine Learning (ICML)</em>.
+</div>
+<div id="ref-song2019scorematching" class="csl-entry" role="listitem">
+Song, Yang, and Stefano Ermon. 2019. <span>“Generative Modeling by Estimating Gradients of the Data Distribution.”</span> In <em>Advances in Neural Information Processing Systems (NeurIPS)</em>.
+</div>
+<div id="ref-song2021scorebased" class="csl-entry" role="listitem">
+Song, Yang, Jascha Sohl-Dickstein, Diederik P. Kingma, Abhishek Kumar, Stefano Ermon, and Ben Poole. 2021. <span>“Score-Based Generative Modeling Through Stochastic Differential Equations.”</span> <em>arXiv Preprint arXiv:2011.13456</em>.
+</div>
+<div id="ref-watson2023rfdiffusion" class="csl-entry" role="listitem">
+Watson, Joseph L. et al. 2023. <span>“De Novo Design of Protein Structure and Function with <span>RFdiffusion</span>.”</span> <em>Nature</em>. <a href="https://doi.org/10.1038/s41586-023-06415-8">https://doi.org/10.1038/s41586-023-06415-8</a>.
+</div>
+</div>
+
+</section></section>
+    </div>
+  <div class="quarto-auto-generated-content" style="display: none;">
+<div class="footer footer-default">
+
+</div>
+</div></div>
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script>
+  <script src="index_files/libs/revealjs/dist/reveal.js"></script>
+  <!-- reveal.js plugins -->
+  <script src="index_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
+  <script src="index_files/libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
+  <script src="index_files/libs/revealjs/plugin/reveal-menu/menu.js"></script>
+  <script src="index_files/libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
+  <script src="index_files/libs/revealjs/plugin/quarto-support/support.js"></script>
+  
+
+  <script src="index_files/libs/revealjs/plugin/notes/notes.js"></script>
+  <script src="index_files/libs/revealjs/plugin/search/search.js"></script>
+  <script src="index_files/libs/revealjs/plugin/zoom/zoom.js"></script>
+  <script src="index_files/libs/revealjs/plugin/math/math.js"></script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://revealjs.com/config/
+      Reveal.initialize({
+'controlsAuto': false,
+'previewLinksAuto': false,
+'pdfSeparateFragments': false,
+'autoAnimateEasing': "ease",
+'autoAnimateDuration': 1,
+'autoAnimateUnmatched': true,
+'jumpToSlide': true,
+'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.togglePdfExport(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleScrollView(event)\"><kbd>r</kbd> Scroll View Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"5\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
+'smaller': false,
+ 
+        // Display controls in the bottom right corner
+        controls: true,
+
+        // Help the user learn the controls by providing hints, for example by
+        // bouncing the down arrow when they first encounter a vertical slide
+        controlsTutorial: false,
+
+        // Determines where controls appear, "edges" or "bottom-right"
+        controlsLayout: 'edges',
+
+        // Visibility rule for backwards navigation arrows; "faded", "hidden"
+        // or "visible"
+        controlsBackArrows: 'faded',
+
+        // Display a presentation progress bar
+        progress: true,
+
+        // Display the page number of the current slide
+        slideNumber: 'c/t',
+
+        // 'all', 'print', or 'speaker'
+        showSlideNumber: 'all',
+
+        // Add the current slide number to the URL hash so that reloading the
+        // page/copying the URL will return you to the same slide
+        hash: true,
+
+        // Start with 1 for the hash rather than 0
+        hashOneBasedIndex: false,
+
+        // Flags if we should monitor the hash and change slides accordingly
+        respondToHashChanges: true,
+
+        // Push each slide change to the browser history
+        history: true,
+
+        // Enable keyboard shortcuts for navigation
+        keyboard: true,
+
+        // Enable the slide overview mode
+        overview: true,
+
+        // Disables the default reveal.js slide layout (scaling and centering)
+        // so that you can use custom CSS layout
+        disableLayout: false,
+
+        // Vertical centering of slides
+        center: true,
+
+        // Enables touch navigation on devices with touch input
+        touch: true,
+
+        // Loop the presentation
+        loop: false,
+
+        // Change the presentation direction to be RTL
+        rtl: false,
+
+        // see https://revealjs.com/vertical-slides/#navigation-mode
+        navigationMode: 'linear',
+
+        // Randomizes the order of slides each time the presentation loads
+        shuffle: false,
+
+        // Turns fragments on and off globally
+        fragments: true,
+
+        // Flags whether to include the current fragment in the URL,
+        // so that reloading brings you to the same fragment position
+        fragmentInURL: false,
+
+        // Flags if the presentation is running in an embedded mode,
+        // i.e. contained within a limited portion of the screen
+        embedded: false,
+
+        // Flags if we should show a help overlay when the questionmark
+        // key is pressed
+        help: true,
+
+        // Flags if it should be possible to pause the presentation (blackout)
+        pause: true,
+
+        // Flags if speaker notes should be visible to all viewers
+        showNotes: false,
+
+        // Global override for autoplaying embedded media (null/true/false)
+        autoPlayMedia: null,
+
+        // Global override for preloading lazy-loaded iframes (null/true/false)
+        preloadIframes: null,
+
+        // Number of milliseconds between automatically proceeding to the
+        // next slide, disabled when set to 0, this value can be overwritten
+        // by using a data-autoslide attribute on your slides
+        autoSlide: 0,
+
+        // Stop auto-sliding after user input
+        autoSlideStoppable: true,
+
+        // Use this method for navigation when auto-sliding
+        autoSlideMethod: null,
+
+        // Specify the average time in seconds that you think you will spend
+        // presenting each slide. This is used to show a pacing timer in the
+        // speaker view
+        defaultTiming: null,
+
+        // Enable slide navigation via mouse wheel
+        mouseWheel: false,
+
+        // The display mode that will be used to show slides
+        display: 'block',
+
+        // Hide cursor if inactive
+        hideInactiveCursor: true,
+
+        // Time before the cursor is hidden (in ms)
+        hideCursorTime: 5000,
+
+        // Opens links in an iframe preview overlay
+        previewLinks: false,
+
+        // Transition style (none/fade/slide/convex/concave/zoom)
+        transition: 'fade',
+
+        // Transition speed (default/fast/slow)
+        transitionSpeed: 'default',
+
+        // Transition style for full page slide backgrounds
+        // (none/fade/slide/convex/concave/zoom)
+        backgroundTransition: 'fade',
+
+        // Number of slides away from the current that are visible
+        viewDistance: 3,
+
+        // Number of slides away from the current that are visible on mobile
+        // devices. It is advisable to set this to a lower number than
+        // viewDistance in order to save resources.
+        mobileViewDistance: 2,
+
+        // The "normal" size of the presentation, aspect ratio will be preserved
+        // when the presentation is scaled to fit different resolutions. Can be
+        // specified using percentage units.
+        width: 1280,
+
+        height: 720,
+
+        // Factor of the display size that should remain empty around the content
+        margin: 6.0e-2,
+
+        math: {
+          mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js',
+          config: 'TeX-AMS_HTML-full',
+          tex2jax: {
+            inlineMath: [['\\(','\\)']],
+            displayMath: [['\\[','\\]']],
+            balanceBraces: true,
+            processEscapes: false,
+            processRefs: true,
+            processEnvironments: true,
+            preview: 'TeX',
+            skipTags: ['script','noscript','style','textarea','pre','code'],
+            ignoreClass: 'tex2jax_ignore',
+            processClass: 'tex2jax_process'
+          },
+        },
+
+        // reveal.js plugins
+        plugins: [QuartoLineHighlight, PdfExport, RevealMenu, QuartoSupport,
+
+          RevealMath,
+          RevealNotes,
+          RevealSearch,
+          RevealZoom
+        ]
+      });
+    </script>
+    <script id="quarto-html-after-body" type="application/javascript">
+      window.document.addEventListener("DOMContentLoaded", function (event) {
+        const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+        tabsets.forEach(function(tabset) {
+          const tabby = new Tabby('#' + tabset.id);
+        });
+        const isCodeAnnotation = (el) => {
+          for (const clz of el.classList) {
+            if (clz.startsWith('code-annotation-')) {                     
+              return true;
+            }
+          }
+          return false;
+        }
+        const onCopySuccess = function(e) {
+          // button target
+          const button = e.trigger;
+          // don't keep focus
+          button.blur();
+          // flash "checked"
+          button.classList.add('code-copy-button-checked');
+          var currentTitle = button.getAttribute("title");
+          button.setAttribute("title", "Copied!");
+          let tooltip;
+          if (window.bootstrap) {
+            button.setAttribute("data-bs-toggle", "tooltip");
+            button.setAttribute("data-bs-placement", "left");
+            button.setAttribute("data-bs-title", "Copied!");
+            tooltip = new bootstrap.Tooltip(button, 
+              { trigger: "manual", 
+                customClass: "code-copy-button-tooltip",
+                offset: [0, -8]});
+            tooltip.show();    
+          }
+          setTimeout(function() {
+            if (tooltip) {
+              tooltip.hide();
+              button.removeAttribute("data-bs-title");
+              button.removeAttribute("data-bs-toggle");
+              button.removeAttribute("data-bs-placement");
+            }
+            button.setAttribute("title", currentTitle);
+            button.classList.remove('code-copy-button-checked');
+          }, 1000);
+          // clear code selection
+          e.clearSelection();
+        }
+        const getTextToCopy = function(trigger) {
+          const outerScaffold = trigger.parentElement.cloneNode(true);
+          const codeEl = outerScaffold.querySelector('code');
+          for (const childEl of codeEl.children) {
+            if (isCodeAnnotation(childEl)) {
+              childEl.remove();
+            }
+          }
+          return codeEl.innerText;
+        }
+        const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+          text: getTextToCopy
+        });
+        clipboard.on('success', onCopySuccess);
+        if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+          const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+            text: getTextToCopy,
+            container: window.document.getElementById('quarto-embedded-source-code-modal')
+          });
+          clipboardModal.on('success', onCopySuccess);
+        }
+          var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+          var mailtoRegex = new RegExp(/^mailto:/);
+            var filterRegex = new RegExp('/' + window.location.host + '/');
+          var isInternal = (href) => {
+              return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+          }
+          // Inspect non-navigation links and adorn them if external
+         var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+          for (var i=0; i<links.length; i++) {
+            const link = links[i];
+            if (!isInternal(link.href)) {
+              // undo the damage that might have been done by quarto-nav.js in the case of
+              // links that we want to consider external
+              if (link.dataset.originalHref !== undefined) {
+                link.href = link.dataset.originalHref;
+              }
+            }
+          }
+        function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+          const config = {
+            allowHTML: true,
+            maxWidth: 500,
+            delay: 100,
+            arrow: false,
+            appendTo: function(el) {
+                return el.closest('section.slide') || el.parentElement;
+            },
+            interactive: true,
+            interactiveBorder: 10,
+            theme: 'light-border',
+            placement: 'bottom-start',
+          };
+          if (contentFn) {
+            config.content = contentFn;
+          }
+          if (onTriggerFn) {
+            config.onTrigger = onTriggerFn;
+          }
+          if (onUntriggerFn) {
+            config.onUntrigger = onUntriggerFn;
+          }
+            config['offset'] = [0,0];
+            config['maxWidth'] = 700;
+          window.tippy(el, config); 
+        }
+        const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+        for (var i=0; i<noterefs.length; i++) {
+          const ref = noterefs[i];
+          tippyHover(ref, function() {
+            // use id or data attribute instead here
+            let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+            try { href = new URL(href).hash; } catch {}
+            const id = href.replace(/^#\/?/, "");
+            const note = window.document.getElementById(id);
+            if (note) {
+              return note.innerHTML;
+            } else {
+              return "";
+            }
+          });
+        }
+        const findCites = (el) => {
+          const parentEl = el.parentElement;
+          if (parentEl) {
+            const cites = parentEl.dataset.cites;
+            if (cites) {
+              return {
+                el,
+                cites: cites.split(' ')
+              };
+            } else {
+              return findCites(el.parentElement)
+            }
+          } else {
+            return undefined;
+          }
+        };
+        var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+        for (var i=0; i<bibliorefs.length; i++) {
+          const ref = bibliorefs[i];
+          const citeInfo = findCites(ref);
+          if (citeInfo) {
+            tippyHover(citeInfo.el, function() {
+              var popup = window.document.createElement('div');
+              citeInfo.cites.forEach(function(cite) {
+                var citeDiv = window.document.createElement('div');
+                citeDiv.classList.add('hanging-indent');
+                citeDiv.classList.add('csl-entry');
+                var biblioDiv = window.document.getElementById('ref-' + cite);
+                if (biblioDiv) {
+                  citeDiv.innerHTML = biblioDiv.innerHTML;
+                }
+                popup.appendChild(citeDiv);
+              });
+              return popup.innerHTML;
+            });
+          }
+        }
+      });
+      </script>
+    
+
+</body></html>
