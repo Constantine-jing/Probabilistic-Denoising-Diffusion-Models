@@ -1,8 +1,8 @@
 ---
 title: "Denoising Diffusion Probabilistic Models"
 subtitle: "From Theory to Fast Sampling: DDPM, Improvements & Consistency Models"
-author: "YOUR NAME & TEAMMATE NAME"
-date: "2026"
+author: "Mengyan Jing"
+date: "2026-02-15"
 format:
   revealjs:
     theme: simple
@@ -15,10 +15,58 @@ format:
     center: true
     width: 1280
     height: 720
-    margin: 0.06
+    margin: 0.03
+    min-scale: 0.05
+    max-scale: 2.0
+    title-slide-attributes:
+      data-background-color: "#0b0f19"
     code-line-numbers: true
     highlight-style: github
     fig-align: center
+    include-in-header: |
+      <style>
+      .key-eq {
+        background: rgba(59, 130, 246, 0.1);
+        border-left: 4px solid #3b82f6;
+        padding: 0.8em 1em;
+        border-radius: 6px;
+        margin: 0.5em 0;
+      }
+      .reveal .title-slide h1 {
+        font-size: 2.0em;
+        line-height: 1.05;
+        margin-bottom: 0.25em;
+      }
+      .reveal .title-slide p.subtitle {
+        font-size: 1.00em;
+        line-height: 1.15;
+        margin-top: 0.2em;
+        margin-bottom: 1.2em;
+      }
+      .reveal .title-slide p.author {
+        font-size: 0.95em;
+        margin-bottom: 0.35em;
+      }
+      .reveal .title-slide p.date {
+        font-size: 0.85em;
+        opacity: 0.9;
+      }
+      .reveal .title-slide,
+      .reveal .title-slide h1,
+      .reveal .title-slide p {
+        color: #eef2ff;
+      }
+      .outline-link a {
+        text-decoration: none;
+        color: #2563eb;
+        border-bottom: 1px dashed #93b4f5;
+        transition: all 0.2s;
+      }
+      .outline-link a:hover {
+        color: #1d4ed8;
+        border-bottom: 2px solid #1d4ed8;
+      }
+      </style>
 execute:
   echo: true
   warning: false
@@ -28,23 +76,40 @@ bibliography: references.bib
 jupyter: python3
 ---
 
-```{=html}
-<style>
-.key-eq {
-  background: rgba(59, 130, 246, 0.1);
-  border-left: 4px solid #3b82f6;
-  padding: 0.8em 1em;
-  border-radius: 6px;
-  margin: 0.5em 0;
-}
-</style>
-```
+## Outline (20–30 min)
+
+:::: columns
+::: {.column width="55%"}
+### Part I — DDPM (Core Idea) {.unnumbered}
+
+::: {.outline-link}
+- [Motivation & intuition](#sec-intro)
+- [Forward process $q(x_t\mid x_{t-1})$](#sec-forward)
+- [Closed-form shortcut $q(x_t\mid x_0)$](#sec-shortcut)
+- [$\varepsilon$-prediction + $\mathcal L_{\text{simple}}$](#sec-eps-trick)
+- [Why sampling is slow (T steps)](#sec-sampling)
+:::
+:::
+
+::: {.column width="45%"}
+### Part II — Faster & Modern {.unnumbered}
+
+::: {.outline-link}
+- [Improved DDPM: cosine schedule](#sec-schedule-demo)
+- [Faster sampling idea (fewer steps)](#sec-fast-sampling)
+- [Consistency Models: 1–2 step generation](#sec-consistency)
+- [Zero-shot editing (wow examples)](#sec-zero-shot)
+- [Takeaways + demo mention](#sec-summary)
+:::
+:::
+::::
+
 
 <!-- ============================================================
      SECTION 1: INTRODUCTION & MOTIVATION
      ============================================================ -->
 
-# Introduction & Motivation {background-color="#1a1a2e"}
+# Introduction & Motivation {#sec-intro background-color="#1a1a2e"}
 
 ::: notes
 **WHAT TO SAY:** "Hi everyone, today we're presenting on Denoising Diffusion Probabilistic Models — or DDPMs. These are the generative models behind things like DALL-E, Stable Diffusion, and Midjourney. We'll cover the core method, key improvements, and a cool recent extension called Consistency Models."
@@ -148,7 +213,7 @@ This is the key insight from @sohldickstein2015deep, refined by @ho2020ddpm.
 
 ---
 
-## Step 1: The Forward Process (Adding Noise)
+## Step 1: The Forward Process (Adding Noise) {#sec-forward}
 
 At each timestep, slightly shrink the image and add noise:
 
@@ -169,7 +234,7 @@ $$q(x_t \mid x_{t-1}) = \mathcal{N}\!\left(x_t;\; \sqrt{1-\beta_t}\, x_{t-1},\; 
 
 ---
 
-## The Shortcut: Jump to Any Timestep Directly
+## The Shortcut: Jump to Any Timestep Directly {#sec-shortcut}
 
 Define: $\alpha_t = 1 - \beta_t$ and $\bar{\alpha}_t = \prod_{s=1}^{t} \alpha_s$ (cumulative product)
 
@@ -221,7 +286,7 @@ A **U-Net** neural network takes in $(x_t, t)$ and predicts the parameters.
 
 ---
 
-## Step 3: The $\varepsilon$-Prediction Trick
+## Step 3: The $\varepsilon$-Prediction Trick {#sec-eps-trick}
 
 Instead of predicting $\mu_\theta$ directly, predict the **noise** $\varepsilon$ that was added:
 
@@ -276,7 +341,7 @@ That's it. Beautifully simple. [@ho2020ddpm]
 
 ---
 
-## Step 5: Sampling (Generating New Images)
+## Step 5: Sampling (Generating New Images) {#sec-sampling}
 
 ```
 Algorithm: DDPM Sampling
@@ -323,7 +388,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # ── Create a simple test image (8x8 checkerboard scaled up) ──
-# Replace this with: Image.open("assets/demo/input.jpg") for a real photo
 np.random.seed(42)
 block = 16
 pattern = np.zeros((8*block, 8*block, 3), dtype=np.float32)
@@ -361,17 +425,11 @@ plt.show()
 
 ::: notes
 **WHAT TO SAY:** "Here's the forward process in action. At t=0 we have our clean image — a colorful checkerboard. As t increases, we add more and more noise following the linear schedule. By t=300, the structure is getting hard to see. By t=500, it's mostly noise. By t=999, it's indistinguishable from pure random noise. The model's job is to learn to reverse this process."
-
-**CODE EXPLANATION:**
-- `betas = np.linspace(1e-4, 2e-2, T)` — creates the linear noise schedule from Ho et al.
-- `alpha_bar = np.cumprod(1 - betas)` — the cumulative product that tells us total noise at step t
-- `q_sample` implements: $x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1-\bar{\alpha}_t}\varepsilon$
-- `.clip(0,1)` just keeps pixel values valid for display
 :::
 
 ---
 
-## Why the Schedule Matters: SNR Comparison
+## Why the Schedule Matters: SNR Comparison {#sec-schedule-demo}
 
 ```{python}
 #| label: fig-snr-comparison
@@ -389,12 +447,11 @@ alphas_lin = 1 - betas_lin
 ab_lin = np.cumprod(alphas_lin)
 
 # ── COSINE schedule (Nichol & Dhariwal 2021) ──
-s = 0.008  # small offset to prevent beta from being too small near t=0
+s = 0.008
 steps = np.arange(T + 1, dtype=np.float64)
 f = np.cos(((steps / T) + s) / (1 + s) * np.pi / 2) ** 2
-ab_cos = f / f[0]       # normalize so alpha_bar[0] = 1
-ab_cos = ab_cos[1:]      # now length T, for t = 1..T
-# clip betas to prevent singularities
+ab_cos = f / f[0]
+ab_cos = ab_cos[1:]
 betas_cos = 1 - ab_cos / np.concatenate([[1.0], ab_cos[:-1]])
 betas_cos = np.clip(betas_cos, 0, 0.999)
 ab_cos = np.cumprod(1 - betas_cos)
@@ -405,7 +462,6 @@ snr_cos = ab_cos / (1 - ab_cos + 1e-12)
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 4.5))
 
-# Plot 1: alpha_bar
 axes[0].plot(ab_lin, label="Linear", linewidth=2, color="#ef4444")
 axes[0].plot(ab_cos, label="Cosine", linewidth=2, color="#3b82f6")
 axes[0].set_xlabel("Timestep t", fontsize=12)
@@ -414,7 +470,6 @@ axes[0].set_title("How much signal remains?", fontsize=13, fontweight='bold')
 axes[0].legend(fontsize=11)
 axes[0].grid(alpha=0.3)
 
-# Plot 2: SNR (log scale)
 axes[1].plot(snr_lin, label="Linear", linewidth=2, color="#ef4444")
 axes[1].plot(snr_cos, label="Cosine", linewidth=2, color="#3b82f6")
 axes[1].set_yscale("log")
@@ -429,14 +484,7 @@ plt.show()
 ```
 
 ::: notes
-**WHAT TO SAY:** "This is a key improvement from Nichol and Dhariwal. The LEFT plot shows alpha-bar — how much original signal remains — over time. The RED linear schedule drops to near zero by step 750, meaning the last quarter of the process is basically wasted — it's just shuffling pure noise around. The BLUE cosine schedule decreases much more gradually, keeping useful signal throughout the entire process. The RIGHT plot shows the same thing as SNR on a log scale. The cosine schedule provides a smoother transition, which leads to better image quality, especially for small images."
-
-**WHAT THIS MEANS:**
-- SNR = signal / noise = $\bar{\alpha}_t / (1-\bar{\alpha}_t)$
-- High SNR = mostly signal, low SNR = mostly noise
-- Linear schedule: last ~25% of timesteps are wasted (already pure noise)
-- Cosine schedule: useful denoising work happening across all timesteps
-- This is from Nichol & Dhariwal 2021, Table 2: cosine + L_hybrid gives best FID on CIFAR-10
+**WHAT TO SAY:** "This is a key improvement from Nichol and Dhariwal. The LEFT plot shows alpha-bar — how much original signal remains — over time. The RED linear schedule drops to near zero by step 750, meaning the last quarter of the process is basically wasted. The BLUE cosine schedule decreases much more gradually, keeping useful signal throughout the entire process."
 :::
 
 ---
@@ -452,7 +500,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 np.random.seed(123)
-# Reuse the checkerboard
 block = 16
 pattern = np.zeros((8*block, 8*block, 3), dtype=np.float32)
 for i in range(8):
@@ -464,11 +511,9 @@ for i in range(8):
 x0 = pattern
 
 T = 1000
-# Linear
 betas_lin = np.linspace(1e-4, 2e-2, T)
 ab_lin = np.cumprod(1 - betas_lin)
 
-# Cosine
 s = 0.008
 steps = np.arange(T + 1, dtype=np.float64)
 f_cos = np.cos(((steps / T) + s) / (1 + s) * np.pi / 2) ** 2
@@ -486,7 +531,7 @@ compare_t = [200, 400, 600, 800]
 fig, axes = plt.subplots(2, len(compare_t), figsize=(14, 5))
 
 for col, t in enumerate(compare_t):
-    np.random.seed(col)  # same noise for fair comparison
+    np.random.seed(col)
     img_lin = q_sample_with_schedule(x0, t, ab_lin)
     np.random.seed(col)
     img_cos = q_sample_with_schedule(x0, t, ab_cos)
@@ -507,7 +552,7 @@ plt.show()
 ```
 
 ::: notes
-**WHAT TO SAY:** "Here's the same image with the same random noise, but with different schedules. Look at t=400: the linear schedule has already destroyed most of the structure, while the cosine schedule still shows clear checkerboard patterns. By t=600, linear is basically noise while cosine still has visible structure. This means cosine gives the network more 'useful work' to do at each step."
+**WHAT TO SAY:** "Here's the same image with the same random noise, but with different schedules. Look at t=400: the linear schedule has already destroyed most of the structure, while the cosine schedule still shows clear checkerboard patterns."
 :::
 
 <!-- ============================================================
@@ -515,10 +560,6 @@ plt.show()
      ============================================================ -->
 
 # Key Improvements {background-color="#1a1a2e"}
-
-::: notes
-**WHAT TO SAY:** "Now let's talk about the improvements that Nichol and Dhariwal made in 2021."
-:::
 
 ---
 
@@ -546,14 +587,12 @@ where $\tilde{\beta}_t = \frac{1-\bar{\alpha}_{t-1}}{1-\bar{\alpha}_t}\beta_t$ i
 [@nichol2021improved]
 
 ::: notes
-**WHAT TO SAY:** "The first improvement: instead of fixing the variance, learn it. The network outputs a value v that interpolates between two known bounds — beta_t and the posterior variance beta-tilde_t. They use a hybrid loss that combines the simple loss with a small weight on the full variational bound. This is important because it enables the next big benefit..."
-
-**WHAT THIS MEANS:** $\tilde{\beta}_t$ is optimal if data were a single point; $\beta_t$ is optimal for pure Gaussian data. Real data is somewhere in between, so we let the network learn where.
+**WHAT TO SAY:** "The first improvement: instead of fixing the variance, learn it. The network outputs a value v that interpolates between two known bounds — beta_t and the posterior variance beta-tilde_t. They use a hybrid loss that combines the simple loss with a small weight on the full variational bound."
 :::
 
 ---
 
-## Improvement 2: Fast Sampling with Learned Variance
+## Improvement 2: Fast Sampling with Learned Variance {#sec-fast-sampling}
 
 With learned variance, you can use **fewer sampling steps** with minimal quality loss.
 
@@ -571,7 +610,7 @@ With learned variance, you can use **fewer sampling steps** with minimal quality
 **Going from minutes → seconds per image!** But can we go even faster?
 
 ::: notes
-**WHAT TO SAY:** "Here's why learning the variance matters in practice. With a fixed variance, cutting from 4000 steps to 100 badly hurts quality. But with learned variance, 100 steps gives reasonable quality — and even 25 steps is usable. This takes generation from minutes down to seconds. But can we push it further? Can we generate in just 1 or 2 steps?"
+**WHAT TO SAY:** "Here's why learning the variance matters in practice. With a fixed variance, cutting from 4000 steps to 100 badly hurts quality. But with learned variance, 100 steps gives reasonable quality. This takes generation from minutes down to seconds. But can we push it further?"
 :::
 
 ---
@@ -594,9 +633,7 @@ Nichol & Dhariwal showed DDPMs achieve **competitive log-likelihoods**:
 Plus: DDPMs have **much higher recall** than GANs (better mode coverage).
 
 ::: notes
-**WHAT TO SAY:** "They also showed DDPMs can match autoregressive models on log-likelihood — previously thought impossible for diffusion models. And importantly, DDPMs achieve much higher recall than GANs, meaning they cover the full distribution rather than just generating a few easy modes. This is measured by precision/recall metrics."
-
-**WHAT THIS MEANS:** Recall = what fraction of real images are 'covered' by the generative model. GANs have low recall (mode collapse). DDPMs have high recall (diverse samples).
+**WHAT TO SAY:** "They also showed DDPMs can match autoregressive models on log-likelihood — previously thought impossible for diffusion models. And importantly, DDPMs achieve much higher recall than GANs, meaning they cover the full distribution rather than just generating a few easy modes."
 :::
 
 <!-- ============================================================
@@ -635,10 +672,6 @@ Plus: DDPMs have **much higher recall** than GANs (better mode coverage).
 :::
 ::::
 
-::: notes
-**WHAT TO SAY:** "The original DDPM paper demonstrated impressive results. On CIFAR-10, they achieved an FID of 3.17 — beating all previous non-adversarial methods. They also showed beautiful face generation on CelebA-HQ at 256x256 resolution. Beyond raw quality, they demonstrated cool properties: progressive generation where structure emerges gradually from noise, smooth interpolation in latent space, and a connection to lossy compression where most bits describe imperceptible details."
-:::
-
 ---
 
 ## Beyond Images: Where Diffusion Models Are Used Today
@@ -649,11 +682,11 @@ Plus: DDPMs have **much higher recall** than GANs (better mode coverage).
 
 . . .
 
-🧬 **Protein Design:** RFdiffusion — generating new protein structures for drug discovery [@watson2023rfdiffusion]
+🧬 **Protein Design:** RFdiffusion — generating new protein structures [@watson2023rfdiffusion]
 
 . . .
 
-🌤️ **Weather Forecasting:** GenCast by DeepMind — probabilistic weather ensembles [@price2024gencast]
+🌤️ **Weather Forecasting:** GenCast by DeepMind [@price2024gencast]
 
 . . .
 
@@ -661,21 +694,13 @@ Plus: DDPMs have **much higher recall** than GANs (better mode coverage).
 
 . . .
 
-🖼️ **Text-to-Image:** DALL·E 2, Stable Diffusion, Imagen — all built on diffusion [@rombach2022latentdiffusion]
-
-::: notes
-**WHAT TO SAY:** "Diffusion models have exploded far beyond academic image benchmarks. They're used in audio generation — WaveGrad generates speech from spectrograms. In biology, RFdiffusion uses diffusion to design entirely new protein structures. Google DeepMind's GenCast uses diffusion for weather forecasting that beats traditional numerical methods. And of course, all the text-to-image systems you've heard of — DALL-E, Stable Diffusion, Midjourney — are built on diffusion models. The core math we showed today is the foundation for all of these."
-:::
+🖼️ **Text-to-Image:** DALL·E 2, Stable Diffusion, Imagen [@rombach2022latentdiffusion]
 
 <!-- ============================================================
      SECTION 6: THE SPEED PROBLEM & CONSISTENCY MODELS
      ============================================================ -->
 
-# The Speed Problem & Consistency Models {background-color="#1a1a2e"}
-
-::: notes
-**WHAT TO SAY:** "Now we get to the main limitation and an exciting recent solution."
-:::
+# The Speed Problem & Consistency Models {#sec-consistency background-color="#1a1a2e"}
 
 ---
 
@@ -697,15 +722,11 @@ DDPMs require **hundreds to thousands** of network evaluations per sample.
 
 **Question:** Can we map noise → data in a **single step** without losing quality?
 
-::: notes
-**WHAT TO SAY:** "This table shows the progression. Original DDPM: 1000 steps, takes minutes. Various improvements got it down to tens of steps. But consistency models — introduced by Song et al. in 2023 — can generate in just 1 or 2 steps. That's a 1000x reduction in compute at sampling time."
-:::
-
 ---
 
 ## Consistency Models: The Key Idea
 
-**Diffusion models** define smooth trajectories from data → noise (via the Probability Flow ODE).
+**Diffusion models** define smooth trajectories from data → noise (Probability Flow ODE).
 
 . . .
 
@@ -722,12 +743,6 @@ $$f_\theta(x_t, t) = x_0 \quad \text{for any } t \in [\epsilon, T]$$
 $$f_\theta(x_t, t) = f_\theta(x_{t'}, t') \quad \text{if } x_t, x_{t'} \text{ are on the same ODE trajectory}$$
 
 [@song2023consistency]
-
-::: notes
-**WHAT TO SAY:** "Here's the brilliant idea from Song et al. Diffusion models define smooth paths — ODE trajectories — from data to noise. Instead of walking along this path step by step, what if we trained a network to jump directly to the endpoint? Given any noisy image x_t at any noise level t, the consistency model f_theta outputs the clean image x_0 directly. The key property they enforce is self-consistency: two points on the same trajectory must map to the same clean image."
-
-**WHAT THIS MEANS:** The Probability Flow ODE comes from the SDE formulation of diffusion. It says: there exists a deterministic ODE whose marginals at each time t match the diffusion process. Each ODE trajectory connects one clean image to one noise vector uniquely.
-:::
 
 ---
 
@@ -749,12 +764,6 @@ $$f_\theta(x_t, t) = f_\theta(x_{t'}, t') \quad \text{if } x_t, x_{t'} \text{ ar
 - Makes consistency models an **independent** generative model family
 - FID 8.70 on CIFAR-10 (1 step) — still beats VAEs and flows
 
-::: notes
-**WHAT TO SAY:** "There are two training modes. Consistency Distillation starts with an already-trained diffusion model and distills its knowledge into a one-step generator. This gives the best results — 3.55 FID with just one step on CIFAR-10. Consistency Training doesn't need a pre-trained model at all — it trains from scratch using an unbiased score estimator. The quality isn't as good, but it makes consistency models a fully independent class of generative models."
-
-**WHAT THIS MEANS:** Distillation = teacher-student paradigm. The expensive diffusion model is the 'teacher' and the fast consistency model is the 'student' that learns to shortcut the process.
-:::
-
 ---
 
 ## Consistency Model Results
@@ -772,13 +781,9 @@ $$f_\theta(x_t, t) = f_\theta(x_{t'}, t') \quad \text{if } x_t, x_{t'} \text{ ar
 
 **One-step** consistency distillation nearly matches **1000-step** DDPM!
 
-::: notes
-**WHAT TO SAY:** "Look at these numbers. The original DDPM needed 1000 steps to get FID 3.17 on CIFAR-10. Consistency distillation gets 3.55 with just ONE step, and 2.93 with TWO steps — actually beating the original DDPM. On ImageNet 64x64, single-step gets 6.20 FID. This is a massive practical improvement."
-:::
-
 ---
 
-## Zero-Shot Editing: No Extra Training Needed
+## Zero-Shot Editing: No Extra Training Needed {#sec-zero-shot}
 
 Consistency models can perform image editing tasks **they were never trained for**:
 
@@ -802,10 +807,6 @@ Consistency models can perform image editing tasks **they were never trained for
 All done by modifying the multistep sampling algorithm — not retraining!
 
 *See Song et al. 2023, Figure 6 for visual examples.*
-
-::: notes
-**WHAT TO SAY:** "Perhaps the coolest thing about consistency models is zero-shot editing. A model trained ONLY to generate bedrooms can also colorize grayscale images, upscale low-resolution images, fill in missing patches, and even turn rough sketches into realistic images — all without any additional training. This works because the model has learned the underlying data distribution so well that it can solve these inverse problems by modifying the sampling procedure."
-:::
 
 <!-- ============================================================
      SECTION 7: LIMITATIONS & FUTURE WORK
@@ -837,10 +838,6 @@ All done by modifying the multistep sampling algorithm — not retraining!
 
 **Evaluation** — FID/IS are imperfect metrics for generative quality
 
-::: notes
-**WHAT TO SAY:** "Despite the impressive results, there are clear limitations. Sampling speed has improved dramatically but training is still expensive. Memory usage is high — which motivated latent diffusion models like Stable Diffusion that operate in a compressed space. Theoretically, we still don't fully understand why the simplified loss works better than the full variational bound. And our evaluation metrics like FID are known to be imperfect."
-:::
-
 ---
 
 ## Future Directions
@@ -854,15 +851,11 @@ All done by modifying the multistep sampling algorithm — not retraining!
 - **New domains:** Scientific discovery, drug design, climate modeling
 - **Theoretical understanding:** Convergence guarantees, loss landscape analysis
 
-::: notes
-**WHAT TO SAY:** "Looking ahead, research continues on faster sampling, better architectures, and new applications. The SDE formulation by Song et al. 2021 provides a beautiful unified view. New domains keep emerging — protein design, weather, materials science. And there's important theoretical work to be done understanding why these models work so well."
-:::
-
 <!-- ============================================================
      SECTION 8: SUMMARY & REFERENCES
      ============================================================ -->
 
-# Summary {background-color="#1a1a2e"}
+# Summary {#sec-summary background-color="#1a1a2e"}
 
 ---
 
