@@ -1,5 +1,5 @@
 ---
-title: "Denoising Diffusion Probabilistic Models"
+title: "Homework: Exploring the DDPM Forward Process and Noise Schedules"
 author: "Mengyan Jing"
 date: "2026-02-16"
 output: pdf_document
@@ -9,14 +9,11 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Homework: Exploring the DDPM Forward Process and Noise Schedules
-
 **Course:** STAT 9100  
 **Topic:** Denoising Diffusion Probabilistic Models  
-**Due:** [DATE]  
 **Total Points:** 40
 
----
+
 
 ## Instructions
 
@@ -40,7 +37,7 @@ The **Signal-to-Noise Ratio** at timestep $t$ is:
 
 $$\text{SNR}(t) = \frac{\bar{\alpha}_t}{1 - \bar{\alpha}_t}$$
 
----
+
 
 ## Question 1: Implement a Custom Noise Schedule (10 points)
 
@@ -52,7 +49,7 @@ $$\bar{\alpha}_t = 1 - \sqrt{t / T}$$
 
 **(b)** Run the plotting code to generate an SNR comparison of all three schedules (linear, cosine, sqrt) on one figure. Include this plot in your submission. In 2–3 sentences: how does the sqrt schedule compare to linear and cosine? Does it drop too fast, too slow, or somewhere in between? **(5 pts)**
 
----
+
 
 ## Question 2: Visualize the Forward Process with Different Schedules (10 points)
 
@@ -62,7 +59,6 @@ The starter code provides a function `q_sample(x0, t, alpha_bar)` that noises an
 
 **(b)** At which timestep does each schedule make the image "unrecognizable" (in your judgment)? Which schedule wastes more timesteps on pure noise? (2–3 sentences) **(5 pts)**
 
----
 
 ## Question 3: The Effect of T (Total Timesteps) (10 points)
 
@@ -70,9 +66,7 @@ In the original DDPM, $T = 1000$. But what if we used fewer total steps?
 
 **(a)** Using the **cosine schedule**, compute and plot the SNR curves for $T = 50$, $T = 200$, and $T = 1000$ on the same figure. The x-axis should be the **fraction** $t/T$ (from 0 to 1) so the curves are comparable. Include this plot. **(5 pts)**
 
-**(b)** Based on your plot, answer: does the cosine schedule maintain a similar shape regardless of $T$? Why might this property be important for sampling with fewer steps (as in the Improved DDPM paper)? (2–3 sentences) **(5 pts)**
-
----
+**(b)** Based on your plot, answer: does the cosine schedule maintain a similar shape regardless of $T$? Why might this property be important for 
 
 ## Question 4: Connecting to the Reverse Process (10 points — Written Only)
 
@@ -88,6 +82,5 @@ Explain in your own words: why does the network predict the noise $\varepsilon$ 
 
 **(c)** Name one advantage and one disadvantage of consistency models compared to standard DDPMs. **(3 pts)**
 
----
 
 **Reminder:** Start from `hw_starter.py`. The `### TODO ###` markers show exactly where you need to write code. Good luck!
