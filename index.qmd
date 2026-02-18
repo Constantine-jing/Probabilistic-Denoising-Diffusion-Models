@@ -1,8 +1,8 @@
 ---
 title: "Denoising Diffusion Probabilistic Models"
 subtitle: "From Theory to Fast Sampling: DDPM, Improvements & Consistency Models"
-author: "Mengyan Jing"
-date: "2026-02-15"
+author: "Mengyan Jing and Seulki Lee"
+date: "2026-02-19"
 format:
   revealjs:
     theme: simple
