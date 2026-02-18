@@ -15,7 +15,7 @@ format:
     center: true
     width: 1280
     height: 720
-    margin: 0.05
+    margin: 0.03
     min-scale: 0.05
     max-scale: 2.0
     title-slide-attributes:
@@ -425,6 +425,67 @@ plt.show()
 
 ::: notes
 **WHAT TO SAY:** "Here's the forward process in action. At t=0 we have our clean image — a colorful checkerboard. As t increases, we add more and more noise following the linear schedule. By t=300, the structure is getting hard to see. By t=500, it's mostly noise. By t=999, it's indistinguishable from pure random noise. The model's job is to learn to reverse this process."
+:::
+
+---
+
+## Reverse Process: Generating Structure from Noise
+
+```{python}
+#| label: fig-reverse-demo
+#| fig-cap: "Simulated reverse process: structure gradually emerges from noise (right → left becomes left → right)"
+#| echo: true
+#| code-fold: true
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ── Same setup as forward demo ──
+np.random.seed(42)
+block = 16
+pattern = np.zeros((8*block, 8*block, 3), dtype=np.float32)
+for i in range(8):
+    for j in range(8):
+        if (i + j) % 2 == 0:
+            pattern[i*block:(i+1)*block, j*block:(j+1)*block] = [0.9, 0.3, 0.2]
+        else:
+            pattern[i*block:(i+1)*block, j*block:(j+1)*block] = [0.2, 0.5, 0.9]
+x0 = pattern
+
+T = 1000
+betas = np.linspace(1e-4, 2e-2, T, dtype=np.float64)
+alphas = 1.0 - betas
+alpha_bar = np.cumprod(alphas)
+
+# ── Simulate what the reverse process "sees" ──
+# At each timestep t, a perfect denoiser would estimate:
+#   x̂₀ = (x_t - sqrt(1-ᾱ_t)·ε) / sqrt(ᾱ_t)
+# We simulate this by showing the noisy image at decreasing t
+# (i.e., what the model progressively recovers)
+timesteps_reverse = [999, 750, 500, 300, 150, 50, 0]
+
+fig, axes = plt.subplots(1, len(timesteps_reverse), figsize=(16, 3))
+for ax, t in zip(axes, timesteps_reverse):
+    if t == 0:
+        xt = x0.copy()
+    else:
+        np.random.seed(42)  # same noise each time for consistency
+        eps = np.random.randn(*x0.shape)
+        xt = (np.sqrt(alpha_bar[t]) * x0 + np.sqrt(1 - alpha_bar[t]) * eps).clip(0, 1)
+    ax.imshow(xt)
+    step_label = len(timesteps_reverse) - 1 - timesteps_reverse.index(t)
+    ax.set_title(f"step {step_label}\n(t={t})", fontsize=11, fontweight='bold')
+    ax.axis("off")
+
+fig.suptitle("Reverse Process (generation): noise → image emerges step by step",
+             fontsize=14, y=1.05)
+plt.tight_layout()
+plt.show()
+```
+
+::: notes
+**WHAT TO SAY:** "Now here's what the reverse process — the generation — looks like. Reading left to right: we start from pure noise at t=999. As the model denoises step by step, structure gradually emerges. First you see vague color blobs appearing, then edges start forming, and finally at step 0 we recover a clean, sharp image. This is a simulation of what the trained model would produce — at each step, the network predicts and removes a little bit of noise, and the image gets progressively cleaner. This is the magic of diffusion models: complex structure emerging from pure randomness, one small denoising step at a time."
+
+**IMPORTANT NOTE:** In a real DDPM, the network has never seen the clean image — it generates a *new* image from noise. Here we simulate the process by showing the same noisy image at decreasing noise levels, which shows the same visual effect: structure emerging from chaos.
 :::
 
 ---
