@@ -1,8 +1,8 @@
 ---
 title: "Denoising Diffusion Probabilistic Models"
 subtitle: "From Theory to Fast Sampling: DDPM, Improvements & Consistency Models"
-author: "Mengyan Jing and Seulki Lee"
-date: "2026-02-19"
+author: "Mengyan Jing"
+date: "2026-02-15"
 format:
   revealjs:
     theme: simple
@@ -23,50 +23,7 @@ format:
     code-line-numbers: true
     highlight-style: github
     fig-align: center
-    include-in-header: |
-      <style>
-      .key-eq {
-        background: rgba(59, 130, 246, 0.1);
-        border-left: 4px solid #3b82f6;
-        padding: 0.8em 1em;
-        border-radius: 6px;
-        margin: 0.5em 0;
-      }
-      .reveal .title-slide h1 {
-        font-size: 2.0em;
-        line-height: 1.05;
-        margin-bottom: 0.25em;
-      }
-      .reveal .title-slide p.subtitle {
-        font-size: 1.00em;
-        line-height: 1.15;
-        margin-top: 0.2em;
-        margin-bottom: 1.2em;
-      }
-      .reveal .title-slide p.author {
-        font-size: 0.95em;
-        margin-bottom: 0.35em;
-      }
-      .reveal .title-slide p.date {
-        font-size: 0.85em;
-        opacity: 0.9;
-      }
-      .reveal .title-slide,
-      .reveal .title-slide h1,
-      .reveal .title-slide p {
-        color: #eef2ff;
-      }
-      .outline-link a {
-        text-decoration: none;
-        color: #2563eb;
-        border-bottom: 1px dashed #93b4f5;
-        transition: all 0.2s;
-      }
-      .outline-link a:hover {
-        color: #1d4ed8;
-        border-bottom: 2px solid #1d4ed8;
-      }
-      </style>
+    css: custom.css
 execute:
   echo: true
   warning: false
